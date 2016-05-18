@@ -36,6 +36,8 @@ Only the database.sqlite is necessary
 Python 3.4, numpy
 
 ##Configuration
+Configuration is done through settings.cfg
+
 ###Required
 database_directory: (Enter the path to where the database is located)
 

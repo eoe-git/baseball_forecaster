@@ -96,15 +96,12 @@ def get_plot_data(cursor, stat, player_id):
         for age in range(first_year_age, last_year_age + 1):
             stat_mean = 0.0
             number_of_players = 0
-            for matching_player_year in closest_matching_players:
-                other_player_id = matching_player_year[1]
-                other_player_seasonal_stats = batter_queries.get_players_season_stats_for_age\
-                    (cursor, other_player_id, age)
+            other_players_seasonal_stats_at_age = batter_queries.get_players_season_stats_at_age \
+                (cursor, closest_matching_players, age)
 
-                if player_has_stats_for_that_age(other_player_seasonal_stats):
-                    other_player_seasonal_stats = other_player_seasonal_stats[0]
-                    stat_mean += other_player_seasonal_stats[stat]
-                    number_of_players += 1
+            for other_player_seasonal_stats in other_players_seasonal_stats_at_age:
+                stat_mean += other_player_seasonal_stats[stat]
+                number_of_players += 1
 
             if number_of_players == 0:
                 continue
