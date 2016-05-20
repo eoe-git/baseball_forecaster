@@ -69,14 +69,14 @@ def get_players_season_stats_for_age(cursor, player_id, age):
     return execute_query_and_return_values(cursor, query)
 
 
-def get_players_season_stats_at_age(cursor, player_list, age):
-    players_in_query = ''
+def get_compared_players_yearly_season_stats(cursor, player_list):
+    players_in_query = '('
     for player, i in zip(player_list, range(0, len(player_list))):
         player = player[1]
         if i != (len(player_list) - 1):
             players_in_query += "'" + player + "',"
         else:
-            players_in_query += "'" + player + "'"
+            players_in_query += "'" + player + "')"
 
     query = """SELECT batting.player_id, player.birth_year, batting.year,
                batting.year - player.birth_year	AS age,
@@ -85,8 +85,7 @@ def get_players_season_stats_at_age(cursor, player_list, age):
                 FROM batting
                INNER JOIN player
                ON batting.player_id=player.player_id
-                WHERE batting.player_id in (""" + players_in_query + """)
-               AND age = """ + str(age) + """
+                WHERE batting.player_id in """ + players_in_query + """
               AND (batting.ab + batting.bb) > """ + str(minimum_ab_bb)
 
     return execute_query_and_return_values(cursor, query)

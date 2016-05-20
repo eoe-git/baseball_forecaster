@@ -16,7 +16,7 @@ def curve_fit_batter_data(cursor):
     categories = batter_queries.get_queried_categories(cursor, predict_year)
     player_list = batter_queries.get_player_list(cursor, predict_year)
     for player_stats in player_list:
-        forecasted_stats = [player_stats[categories['player_id']], player_stats[categories['year']]]
+        forecasted_stats = [player_stats[categories['player_id']], int(player_stats[categories['year']]) + 1]
         for stat in stat_range:
             player_id = player_stats[categories['player_id']]
             plot_data = data.get_plot_data(cursor, stat, player_id)

@@ -91,17 +91,19 @@ def get_plot_data(cursor, stat, player_id):
         sorted_compared_player_dictionary = get_difference_between_player_stats\
             (season_stats, other_players_season_stats_at_same_age, stat)
         closest_matching_players = get_closest_matching_players(sorted_compared_player_dictionary, age_in_season_stats)
+        compared_players_yearly_season_stats = batter_queries.get_compared_players_yearly_season_stats \
+            (cursor, closest_matching_players)
 
         stat_mean_list = []
         for age in range(first_year_age, last_year_age + 1):
             stat_mean = 0.0
             number_of_players = 0
-            other_players_seasonal_stats_at_age = batter_queries.get_players_season_stats_at_age \
-                (cursor, closest_matching_players, age)
 
-            for other_player_seasonal_stats in other_players_seasonal_stats_at_age:
-                stat_mean += other_player_seasonal_stats[stat]
-                number_of_players += 1
+            for other_player_seasonal_stats in compared_players_yearly_season_stats:
+                season_stat_age = other_player_seasonal_stats[3]
+                if season_stat_age == age:
+                    stat_mean += other_player_seasonal_stats[stat]
+                    number_of_players += 1
 
             if number_of_players == 0:
                 continue
