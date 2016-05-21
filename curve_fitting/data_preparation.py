@@ -8,6 +8,7 @@ config.read('settings.cfg')
 number_of_closest_players = int(config['curve_fitting']['number_of_closest_players'])
 predict_year = config['curve_fitting']['polynomial_order']
 number_of_points_for_weight = int(config['curve_fitting']['number_of_points_for_weight'])
+player_age_range = range(16, 51)
 
 
 def get_player_first_and_last_year(player_yearly_seasonal_stats):
@@ -66,8 +67,17 @@ def player_has_stats_for_that_age(query_results):
     return there_is_a_result
 
 
-def get_weight_term(test_age, actual_age, loop_age, years_experience, players_matched, maximum_matches):
-    term1 = 1 - (abs(loop_age - test_age) / (years_experience + 1))
+def get_distance_from_playing_career_range(first_year, last_year, tested_age):
+    distance = 0
+    if tested_age < first_year:
+        distance = first_year - tested_age
+    elif tested_age > last_year:
+        distance = tested_age - last_year
+    return distance
+
+
+def get_weight_term(test_age, actual_age, loop_age, years_experience, players_matched, maximum_matches, distance):
+    term1 = 1 - (abs(loop_age - test_age) / (distance + years_experience + 1))
     term2 = 1 - (abs(actual_age - test_age) / (years_experience + 1))
     term3 = (players_matched / maximum_matches)
     weight_term = term1 * term2 * term3
@@ -95,7 +105,7 @@ def get_plot_data(cursor, stat, player_id):
             (cursor, closest_matching_players)
 
         stat_mean_list = []
-        for age in range(first_year_age, last_year_age + 1):
+        for age in player_age_range:
             stat_mean = 0.0
             number_of_players = 0
 
@@ -109,13 +119,17 @@ def get_plot_data(cursor, stat, player_id):
                 continue
 
             stat_mean /= number_of_players
-            stat_mean_with_age = age, stat_mean
-            stat_mean_list.append(stat_mean_with_age)
+            stat_mean_with_age_and_player_count = age, stat_mean, number_of_players
+            stat_mean_list.append(stat_mean_with_age_and_player_count)
 
-        for mean_and_age in stat_mean_list:
-            weight_term = get_weight_term(age_in_season_stats, last_year_age,
-                                          age, years_experience, number_of_players, number_of_closest_players)
+        for mean_and_age_and_player_count in stat_mean_list:
+            age = mean_and_age_and_player_count[0]
+            distance_from_career = get_distance_from_playing_career_range(first_year_age, last_year_age, age)
+            weight_term = get_weight_term(age_in_season_stats, last_year_age, age, years_experience,
+                                          mean_and_age_and_player_count[2], number_of_closest_players,
+                                          distance_from_career)
             number_of_points = int(number_of_points_for_weight * weight_term) + 1
+            mean_and_age = mean_and_age_and_player_count[0], mean_and_age_and_player_count[1]
             for q in range(1, number_of_points):
                 plot_list.append(mean_and_age)
 
