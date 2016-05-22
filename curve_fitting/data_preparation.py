@@ -101,6 +101,8 @@ def get_plot_data(cursor, stat, player_id):
         sorted_compared_player_dictionary = get_difference_between_player_stats\
             (season_stats, other_players_season_stats_at_same_age, stat)
         closest_matching_players = get_closest_matching_players(sorted_compared_player_dictionary, age_in_season_stats)
+        if len(closest_matching_players) == 0:
+            continue
         compared_players_yearly_season_stats = batter_queries.get_compared_players_yearly_season_stats \
             (cursor, closest_matching_players)
 
