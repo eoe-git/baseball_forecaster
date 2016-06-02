@@ -84,8 +84,8 @@ def get_weight_term(test_age, actual_age, loop_age, years_experience, players_ma
     return weight_term
 
 
-def get_plot_data(cursor, stat, player_id):
-    player_yearly_seasonal_stats = batter_queries.get_players_yearly_season_stats(cursor, player_id)
+def get_plot_data(stat, player_id):
+    player_yearly_seasonal_stats = batter_queries.get_players_yearly_season_stats(player_id)
     first_and_last_year_age = get_player_first_and_last_year(player_yearly_seasonal_stats)
     first_year_age = first_and_last_year_age[0]
     last_year_age = first_and_last_year_age[1]
@@ -95,7 +95,7 @@ def get_plot_data(cursor, stat, player_id):
     for season_stats in player_yearly_seasonal_stats:
         age_in_season_stats = season_stats[3]
         other_players_season_stats_at_same_age = batter_queries.get_other_players_season_stats_at_same_age\
-            (cursor, player_id, age_in_season_stats)
+            (player_id, age_in_season_stats)
         other_players_season_stats_at_same_age = get_dictionary_with_only_stat_for_player\
             (other_players_season_stats_at_same_age, stat)
         sorted_compared_player_dictionary = get_difference_between_player_stats\
@@ -104,7 +104,7 @@ def get_plot_data(cursor, stat, player_id):
         if len(closest_matching_players) == 0:
             continue
         compared_players_yearly_season_stats = batter_queries.get_compared_players_yearly_season_stats \
-            (cursor, closest_matching_players)
+            (closest_matching_players)
 
         stat_mean_list = []
         for age in player_age_range:
