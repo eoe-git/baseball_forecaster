@@ -38,7 +38,24 @@ def get_players_previous_season_stats(predict_year, minimum_pa):
     return query
 
 
-def create_batting_forecast_table(cursor):
+def get_player_season_stats_for_career(player_id, minimum_pa):
+    query = """
+            SELECT
+                batting.player_id, player.birth_year, batting.year,
+                batting.year - player.birth_year	AS age,
+                batting.ab, batting.r, batting.h, batting.double, batting.triple,
+                batting.hr, batting.rbi, batting.sb, batting.bb
+            FROM
+                batting
+            INNER JOIN
+                player ON batting.player_id=player.player_id
+            WHERE
+                player.player_id = '""" + str(player_id) + "'""""
+                AND (batting.ab + batting.bb) > """ + str(minimum_pa)
+    return query
+
+
+def create_batting_forecast_table():
     query = """
             CREATE TABLE IF NOT EXISTS batting (
                 player_id TEXT,
@@ -54,10 +71,10 @@ def create_batting_forecast_table(cursor):
                 rbi NUMERIC,
                 sb NUMERIC)"""
 
-    cursor.execute(query)
+    return query
 
 
-def temp_create_batting_forecast_table(cursor):
+def temp_create_batting_forecast_table():
     query = """
             CREATE TABLE IF NOT EXISTS batting (
                 player_id TEXT,
@@ -74,7 +91,7 @@ def temp_create_batting_forecast_table(cursor):
                 rbi NUMERIC,
                 sb NUMERIC)"""
 
-    cursor.execute(query)
+    return query
 
 
 def insert_forecasted_stats():

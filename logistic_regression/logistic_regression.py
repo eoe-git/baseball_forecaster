@@ -13,8 +13,7 @@ name_age_and_id = ['player_id', 'year', 'age']
 
 
 def curve_fit_batter_data():
-    data.clear_all_train_data()
-    data.clear_forecasted_stats()
+    data.database_preparation()
 
     X_test = data.get_players_previous_season_stats()
     stats = data.get_player_stats()
