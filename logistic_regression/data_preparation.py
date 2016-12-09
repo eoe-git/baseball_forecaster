@@ -15,47 +15,21 @@ furthest_back_year = int(config['general']['furthest_back_year'])
 minimum_plate_appearances = int(config['general']['minimum_plate_appearances'])
 
 
-def get_player_in_data_list(stats):
-    player_list = []
-    for index, stat in stats.iterrows():
-        if stat[0] not in player_list:
-            player_list.append(stat[0])
-        else:
-            continue
-    return player_list
-
-
-def get_player_career_stats(player, stats):
-    player_stats = []
-    for index, stat in stats.iterrows():
-        if stat[0] == player:
-            player_stats.append(stat)
-        else:
-            continue
-    return player_stats
-
-
-def get_plot_data(stats):
-    player_list = get_player_in_data_list(stats)
+def get_plot_data():
+    player_list = get_player_list().values.tolist()
     count = 0
     for player in player_list:
+        player = player[0]
         if count > 3:
             break
-        player_stats = get_player_career_stats(player, stats)
-        # player_stats = get_player_season_stats_for_career(player)
+        player_stats = get_player_season_stats_for_career(player)
         if len(player_stats) == 1:
             continue  # cannot get predict data if sample is only 1 since current and future year are compared
         else:
-            for i in player_stats[:-1]:
-                insert_train_data(i, 'x')
-            for i in player_stats[1:]:
-                insert_train_data(i, 'y')
-        """
             for index, season_stats in player_stats[:-1].iterrows():
                 insert_train_data(season_stats, 'x')
             for index, season_stats in player_stats[1:].iterrows():
                 insert_train_data(season_stats, 'y')
-        """
         count += 1
 
 
@@ -63,10 +37,10 @@ def get_train_data_for_category(Y_train, category):
     return Y_train.loc[:, [category]]
 
 
-def get_player_stats():
-    query = batter_queries.get_player_stats(predict_year, furthest_back_year, minimum_plate_appearances)
-    player_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
-    return player_stats
+def get_player_list():
+    query = batter_queries.get_player_list(predict_year, furthest_back_year, minimum_plate_appearances)
+    player_list = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
+    return player_list
 
 
 def get_players_previous_season_stats():
@@ -76,7 +50,8 @@ def get_players_previous_season_stats():
 
 
 def get_player_season_stats_for_career(player_id):
-    query = batter_queries.get_player_season_stats_for_career(player_id, minimum_plate_appearances)
+    query = batter_queries.get_player_season_stats_for_career(player_id, predict_year, furthest_back_year,
+                                                              minimum_plate_appearances)
     player_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_stats
 

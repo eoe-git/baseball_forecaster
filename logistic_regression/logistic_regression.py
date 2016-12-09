@@ -16,8 +16,7 @@ def curve_fit_batter_data():
     data.database_preparation()
 
     X_test = data.get_players_previous_season_stats()
-    stats = data.get_player_stats()
-    data.get_plot_data(stats)
+    data.get_plot_data()
     X_train = data.get_train_data('x')
     Y_train_stats = data.get_train_data('y')
 

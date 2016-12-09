@@ -2,13 +2,10 @@ import sqlite3
 import pandas as pd
 
 
-def get_player_stats(predict_year, furthest_back, minimum_pa):
+def get_player_list(predict_year, furthest_back, minimum_pa):
     query = """
             SELECT
-                batting.player_id, player.birth_year, batting.year,
-                batting.year - player.birth_year AS age,
-                batting.ab, batting.h, batting.bb, batting.double, batting.triple,
-                batting.hr, batting.r, batting.rbi, batting.sb
+                DISTINCT batting.player_id
             FROM
                 batting
             INNER JOIN
@@ -38,20 +35,22 @@ def get_players_previous_season_stats(predict_year, minimum_pa):
     return query
 
 
-def get_player_season_stats_for_career(player_id, minimum_pa):
+def get_player_season_stats_for_career(player_id, predict_year, furthest_back, minimum_pa):
     query = """
             SELECT
                 batting.player_id, player.birth_year, batting.year,
                 batting.year - player.birth_year	AS age,
-                batting.ab, batting.r, batting.h, batting.double, batting.triple,
-                batting.hr, batting.rbi, batting.sb, batting.bb
+                batting.ab, batting.h, batting.bb, batting.double, batting.triple,
+                batting.hr, batting.r, batting.rbi, batting.sb
             FROM
                 batting
             INNER JOIN
                 player ON batting.player_id=player.player_id
             WHERE
                 player.player_id = '""" + str(player_id) + "'""""
-                AND (batting.ab + batting.bb) > """ + str(minimum_pa)
+                AND batting.year >= """ + str(furthest_back) + """
+                AND batting.year <= """ + str(predict_year - 1) + """
+                AND (batting.ab + batting.bb) >  """ + str(minimum_pa)
     return query
 
 
