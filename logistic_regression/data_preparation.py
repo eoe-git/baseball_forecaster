@@ -1,5 +1,6 @@
 import configparser
 import sys
+import pandas as pd
 import logistic_regression.batter_queries as batter_queries
 
 config = configparser.ConfigParser()
@@ -14,6 +15,10 @@ predict_year = int(config['general']['forecast_year'])
 furthest_back_year = int(config['general']['furthest_back_year'])
 minimum_plate_appearances = int(config['general']['minimum_plate_appearances'])
 
+stat_categories = ['ab', 'h', 'bb', 'double', 'triple', 'hr', 'r', 'rbi', 'sb']
+stats_in_prediction = ['age']
+id_year_and_age = ['player_id', 'year', 'age']
+
 
 def get_plot_data():
     player_list = get_player_list().values.tolist()
@@ -26,16 +31,32 @@ def get_plot_data():
         if len(player_stats) == 1:
             continue  # cannot get predict data if sample is only 1 since current and future year are compared
         else:
-            for index, season_stats in player_stats[:-1].iterrows():
-                insert_train_data(season_stats, 'x')
-            for index, season_stats in player_stats[1:].iterrows():
-                insert_train_data(season_stats, 'y')
-        count += 1
+            X_train = player_stats[:-1].values
+            Y_train = player_stats[1:].values
+            bulk_insert_train_data(X_train, 'x')
+            bulk_insert_train_data(Y_train, 'y')
+        # count += 1
 
 
 def get_train_data_for_category(Y_train, category):
     return Y_train.loc[:, [category]]
 
+
+def drop_unused_columns_for_forecasting(data):
+    categories = list(data.keys())
+    for i in categories:
+        if i in stat_categories:
+            continue
+        elif i in stats_in_prediction:
+            continue
+        data = data.drop(i, 1)
+    return data
+
+
+def add_id_year_and_age_for_test_data_to_temp_df(temp, X_test):
+    for i in id_year_and_age:
+        temp[i] = pd.Series(X_test[i])
+    return temp
 
 def get_player_list():
     query = batter_queries.get_player_list(predict_year, furthest_back_year, minimum_plate_appearances)
@@ -90,20 +111,20 @@ def clear_train_data(x_or_y):
         sys.exit()
 
 
-def insert_train_data(stats, x_or_y):
+def bulk_insert_train_data(stats, x_or_y):
     query = batter_queries.insert_train_data()
     if x_or_y == 'x':
-        batter_queries.execute_insert_sql_query(query, stats, database_directory, x_train_database_name)
+        batter_queries.execute_bulk_insert_sql_query(query, stats, database_directory, x_train_database_name)
     elif x_or_y == 'y':
-        batter_queries.execute_insert_sql_query(query, stats, database_directory, y_train_database_name)
+        batter_queries.execute_bulk_insert_sql_query(query, stats, database_directory, y_train_database_name)
     elif x_or_y != 'x' and x_or_y != 'y':
         print('The train data is only x or y; not ' + x_or_y)
         sys.exit()
 
 
-def insert_forecasted_stats(stats):
+def bulk_insert_forecasted_stats(stats):
     query = batter_queries.insert_forecasted_stats()
-    batter_queries.execute_insert_sql_query(query, stats, database_directory, forecast_database_name)
+    batter_queries.execute_bulk_insert_sql_query(query, stats, database_directory, forecast_database_name)
 
 
 def create_train_tables():

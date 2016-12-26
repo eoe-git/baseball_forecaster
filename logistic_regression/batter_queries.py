@@ -153,3 +153,11 @@ def execute_insert_sql_query(query, values, database_directory, database_name):
     cursor.execute(query, values)
     connection.commit()
     connection.close()
+
+
+def execute_bulk_insert_sql_query(query, values, database_directory, database_name):
+    connection = sqlite3.connect(database_directory + database_name)
+    cursor = connection.cursor()
+    cursor.executemany(query, values)
+    connection.commit()
+    connection.close()
