@@ -58,6 +58,7 @@ def add_id_year_and_age_for_test_data_to_temp_df(temp, X_test):
         temp[i] = pd.Series(X_test[i])
     return temp
 
+
 def get_player_list():
     query = batter_queries.get_player_list(predict_year, furthest_back_year, minimum_plate_appearances)
     player_list = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)

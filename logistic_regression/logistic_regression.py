@@ -9,7 +9,7 @@ config.read('settings.cfg')
 forecasted_batting_categories = config['logistic_regression']['forecasted_batting_categories'].split(',')
 
 
-def curve_fit_batter_data():
+def forecast_batter_stats():
     data.database_preparation()
 
     X_test = data.get_players_previous_season_stats()
