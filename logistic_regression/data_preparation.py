@@ -15,8 +15,7 @@ predict_year = int(config['general']['forecast_year'])
 furthest_back_year = int(config['general']['furthest_back_year'])
 minimum_plate_appearances = int(config['general']['minimum_plate_appearances'])
 
-stat_categories = ['ab', 'h', 'bb', 'double', 'triple', 'hr', 'r', 'rbi', 'sb']
-stats_in_prediction = ['age']
+non_stat_categories = ['player_id', 'birth_year']
 id_year_and_age = ['player_id', 'year', 'age']
 
 
@@ -45,11 +44,9 @@ def get_train_data_for_category(Y_train, category):
 def drop_unused_columns_for_forecasting(data):
     categories = list(data.keys())
     for i in categories:
-        if i in stat_categories:
-            continue
-        elif i in stats_in_prediction:
-            continue
-        data = data.drop(i, 1)
+        if i in non_stat_categories:
+            data = data.drop(i, 1)
+
     return data
 
 

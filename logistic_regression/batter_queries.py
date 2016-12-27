@@ -23,8 +23,9 @@ def get_players_previous_season_stats(predict_year, minimum_pa):
             SELECT
                 batting.player_id, player.birth_year, batting.year,
                 batting.year - player.birth_year	AS age,
-                batting.ab, batting.h, batting.bb, batting.double, batting.triple,
-                batting.hr, batting.r, batting.rbi, batting.sb
+                batting.g, batting.ab, batting.h, batting.double, batting.triple,
+                batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
+                batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
             FROM
                 batting
             INNER JOIN
@@ -40,8 +41,9 @@ def get_player_season_stats_for_career(player_id, predict_year, furthest_back, m
             SELECT
                 batting.player_id, player.birth_year, batting.year,
                 batting.year - player.birth_year	AS age,
-                batting.ab, batting.h, batting.bb, batting.double, batting.triple,
-                batting.hr, batting.r, batting.rbi, batting.sb
+                batting.g, batting.ab, batting.h, batting.double, batting.triple,
+                batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
+                batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
             FROM
                 batting
             INNER JOIN
@@ -80,15 +82,23 @@ def temp_create_batting_forecast_table():
                 year INTEGER,
                 birth_year INTEGER,
                 age INTEGER,
+                g NUMERIC,
                 ab NUMERIC,
                 h NUMERIC,
-                bb NUMERIC,
                 double NUMERIC,
                 triple NUMERIC,
                 hr NUMERIC,
                 r NUMERIC,
                 rbi NUMERIC,
-                sb NUMERIC)"""
+                sb NUMERIC,
+                cs NUMERIC,
+                bb NUMERIC,
+                so NUMERIC,
+                ibb NUMERIC,
+                hdp NUMERIC,
+                sh NUMERIC,
+                sf NUMERIC,
+                g_idp NUMERIC)"""
 
     return query
 
@@ -108,7 +118,7 @@ def insert_train_data():
             INSERT INTO
                 batting
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
     return query
 
