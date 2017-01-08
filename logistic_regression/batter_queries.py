@@ -2,25 +2,31 @@ import sqlite3
 import pandas as pd
 
 
-def get_player_list(predict_year, furthest_back, minimum_pa):
+# this will miss some players that have low AB and only play as DH
+# Example year (2014) player 'giambja01' will not show up for the predict year 2015
+def get_player_list(predict_year, furthest_back):
     query = """
             SELECT
                 DISTINCT batting.player_id
             FROM
                 batting
-            INNER JOIN
-                player ON batting.player_id = player.player_id
+            INNER JOIN fielding
+                ON batting.player_id = fielding.player_id
+                AND batting.year=fielding.year
             WHERE
                 batting.year >= """ + str(furthest_back) + """
                 AND batting.year <= """ + str(predict_year - 1) + """
-                AND (batting.ab + batting.bb) >  """ + str(minimum_pa) + """
+                AND (batting.ab + batting.bb) >= 1
+                AND fielding.pos != 'P'
             """
     return query
 
 
-def get_players_previous_season_stats(predict_year, minimum_pa):
+# this will miss some players that have low AB and only play as DH
+# Example year (2014) player 'giambja01' will not show up for the predict year 2015
+def get_players_previous_season_stats(predict_year):
     query = """
-            SELECT
+            SELECT DISTINCT
                 batting.player_id, player.birth_year, batting.year,
                 batting.year - player.birth_year	AS age,
                 batting.g, batting.ab, batting.h, batting.double, batting.triple,
@@ -28,15 +34,20 @@ def get_players_previous_season_stats(predict_year, minimum_pa):
                 batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
             FROM
                 batting
-            INNER JOIN
-                player ON batting.player_id=player.player_id
+            INNER JOIN player
+                ON batting.player_id=player.player_id
+            INNER JOIN fielding
+                ON player.player_id=fielding.player_id
+                AND batting.year=fielding.year
             WHERE
                 batting.year = """ + str(predict_year - 1) + """
-                AND (batting.ab + batting.bb) > """ + str(minimum_pa)
+                AND (batting.ab + batting.bb) >= 1
+                AND fielding.pos != 'P'
+            """
     return query
 
 
-def get_player_season_stats_for_career(player_id, predict_year, furthest_back, minimum_pa):
+def get_player_season_stats_for_career(player_id, predict_year, furthest_back):
     query = """
             SELECT
                 batting.player_id, player.birth_year, batting.year,
@@ -46,13 +57,14 @@ def get_player_season_stats_for_career(player_id, predict_year, furthest_back, m
                 batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
             FROM
                 batting
-            INNER JOIN
-                player ON batting.player_id=player.player_id
+            INNER JOIN player
+                ON batting.player_id=player.player_id
             WHERE
                 player.player_id = '""" + str(player_id) + "'""""
                 AND batting.year >= """ + str(furthest_back) + """
                 AND batting.year <= """ + str(predict_year - 1) + """
-                AND (batting.ab + batting.bb) >  """ + str(minimum_pa)
+                AND (batting.ab + batting.bb) >  1
+            """
     return query
 
 
@@ -79,8 +91,8 @@ def temp_create_batting_forecast_table():
     query = """
             CREATE TABLE IF NOT EXISTS batting (
                 player_id TEXT,
-                year INTEGER,
                 birth_year INTEGER,
+                year INTEGER,
                 age INTEGER,
                 g NUMERIC,
                 ab NUMERIC,
