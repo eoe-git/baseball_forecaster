@@ -27,8 +27,6 @@ def get_plot_data():
         if count > 3:
             break
         player_stats = get_player_season_stats_for_career(player)
-        player_stats = combine_player_stats_for_year(player_stats)
-        player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
         if len(player_stats) == 1:
             continue  # cannot get predict data if sample is only 1 since current and future year are compared
         else:
@@ -37,28 +35,6 @@ def get_plot_data():
             bulk_insert_train_data(X_train, 'x')
             bulk_insert_train_data(Y_train, 'y')
         # count += 1
-
-
-def combine_player_stats_for_year(season_stats):
-    cols = ['player_id', 'birth_year', 'year', 'age']
-    season_stats = season_stats.groupby(cols, as_index=False, sort=False).sum()
-    return season_stats
-
-
-def remove_any_stats_that_dont_meet_min_pa(season_stats):
-    temp = season_stats
-    for i, season in season_stats.iterrows():
-        plate_appearances = season['ab'] + season['bb']
-        if plate_appearances < minimum_plate_appearances:
-            temp.drop(i, inplace=True)
-    temp = temp.reset_index(drop=True)
-    return temp
-
-
-def combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(career_stats):
-    career_stats = combine_player_stats_for_year(career_stats)
-    career_stats_meeting_min_pa = remove_any_stats_that_dont_meet_min_pa(career_stats)
-    return career_stats_meeting_min_pa
 
 
 def get_train_data_for_category(Y_train, category):
@@ -81,27 +57,22 @@ def add_id_year_and_age_for_test_data_to_temp_df(temp, X_test):
 
 
 def get_player_list():
-    query = batter_queries.get_player_list(predict_year, furthest_back_year)
+    query = batter_queries.get_player_list(predict_year, furthest_back_year, minimum_plate_appearances)
     player_list = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_list
 
 
 def get_players_previous_season_stats():
-    query = batter_queries.get_players_previous_season_stats(predict_year)
+    query = batter_queries.get_players_previous_season_stats(predict_year, minimum_plate_appearances)
     player_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_stats
 
 
 def get_player_season_stats_for_career(player_id):
-    query = batter_queries.get_player_season_stats_for_career(player_id, predict_year, furthest_back_year)
+    query = batter_queries.get_player_season_stats_for_career(player_id, predict_year, furthest_back_year,
+                                                              minimum_plate_appearances)
     player_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_stats
-
-
-def get_actual_forecast_year_values(player_id):
-    query = batter_queries.get_actual_forecast_year_values_for_player(player_id, predict_year)
-    forecast_year_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
-    return forecast_year_stats
 
 
 def get_train_data(x_or_y):
