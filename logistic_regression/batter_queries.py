@@ -82,8 +82,8 @@ def create_batting_forecast_table():
                 hr NUMERIC,
                 r NUMERIC,
                 rbi NUMERIC,
-                sb NUMERIC)"""
-
+                sb NUMERIC)
+            """
     return query
 
 
@@ -110,8 +110,8 @@ def temp_create_batting_forecast_table():
                 hdp NUMERIC,
                 sh NUMERIC,
                 sf NUMERIC,
-                g_idp NUMERIC)"""
-
+                g_idp NUMERIC)
+                """
     return query
 
 

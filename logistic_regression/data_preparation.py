@@ -2,6 +2,7 @@ import configparser
 import sys
 import pandas as pd
 import logistic_regression.batter_queries as batter_queries
+import logistic_regression.data_config as data_config
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
@@ -98,12 +99,6 @@ def get_player_season_stats_for_career(player_id):
     return player_stats
 
 
-def get_actual_forecast_year_values(player_id):
-    query = batter_queries.get_actual_forecast_year_values_for_player(player_id, predict_year)
-    forecast_year_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
-    return forecast_year_stats
-
-
 def get_train_data(x_or_y):
     query = batter_queries.get_all_data_from_batting()
     if x_or_y == 'x':
@@ -177,5 +172,7 @@ def clear_forecasted_stats():
 def database_preparation():
     create_forecasted_tables()
     create_train_tables()
+    data_config.create_config_table()
     clear_all_train_data()
     clear_forecasted_stats()
+    data_config.clear_config_table()

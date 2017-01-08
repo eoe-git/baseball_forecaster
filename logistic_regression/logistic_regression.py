@@ -1,17 +1,23 @@
 import logistic_regression.data_preparation as data
 import logistic_regression.fit as fit
+import logistic_regression.data_config as data_config
 import configparser
 import pandas as pd
 
 config = configparser.ConfigParser()
-
 config.read('settings.cfg')
+
 forecasted_batting_categories = config['logistic_regression']['forecasted_batting_categories'].split(',')
 
 
 def forecast_batter_stats():
-    data.database_preparation()
-    data.get_plot_data()
+    data_config.create_config_table()
+    if data_config.config_values_have_changed():
+        data.database_preparation()
+        data_config.insert_values_into_config_table()
+        data.get_plot_data()
+    else:
+        data.clear_forecasted_stats()
 
     X_test = data.combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(data.get_players_previous_season_stats())
     X_train = data.get_train_data('x')
