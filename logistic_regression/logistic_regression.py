@@ -4,16 +4,16 @@ import configparser
 import pandas as pd
 
 config = configparser.ConfigParser()
-config.read('settings.cfg')
 
+config.read('settings.cfg')
 forecasted_batting_categories = config['logistic_regression']['forecasted_batting_categories'].split(',')
 
 
 def forecast_batter_stats():
     data.database_preparation()
-
-    X_test = data.get_players_previous_season_stats()
     data.get_plot_data()
+
+    X_test = data.combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(data.get_players_previous_season_stats())
     X_train = data.get_train_data('x')
     Y_train_stats = data.get_train_data('y')
 
@@ -26,9 +26,11 @@ def forecast_batter_stats():
     Y_train_stats = data.drop_unused_columns_for_forecasting(Y_train_stats)
 
     for category in forecasted_batting_categories:
+        print("Starting: " + category)
         Y_train = data.get_train_data_for_category(Y_train_stats, category)
         Y_test = fit.get_forecasted_stats(X_train, Y_train, X_test)
         temp[category] = pd.Series(Y_test)
+        print("__________________________________")
 
     results = temp.values
     data.bulk_insert_forecasted_stats(results)
