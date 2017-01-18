@@ -77,9 +77,10 @@ def value_does_not_exist_in_config_table(section, setting, value):
 
 def config_values_have_changed():
     for section in config.sections():
-        for setting, value in config.items(section):
-            if value_does_not_exist_in_config_table(section, setting, value):
-                return True
+        if section == 'general':
+            for setting, value in config.items(section):
+                if value_does_not_exist_in_config_table(section, setting, value):
+                    return True
     return False
 
 

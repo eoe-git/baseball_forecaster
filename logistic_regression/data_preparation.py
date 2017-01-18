@@ -10,11 +10,12 @@ config.read('settings.cfg')
 database_directory = config['general']['database_directory']
 database_name = config['general']['database_name']
 forecast_database_name = config['general']['forecast_database_name']
-x_train_database_name = config['logistic_regression']['x_train_database_name']
-y_train_database_name = config['logistic_regression']['y_train_database_name']
+x_train_database_name = config['general']['x_train_database_name']
+y_train_database_name = config['general']['y_train_database_name']
 predict_year = int(config['general']['forecast_year'])
 furthest_back_year = int(config['general']['furthest_back_year'])
 minimum_plate_appearances = int(config['general']['minimum_plate_appearances'])
+forecasted_batting_categories = config['logistic_regression']['forecasted_batting_categories'].split(',')
 
 non_stat_categories = ['player_id', 'birth_year']
 id_year_and_age = ['player_id', 'year', 'age']
@@ -99,6 +100,12 @@ def get_player_season_stats_for_career(player_id):
     return player_stats
 
 
+def get_actual_forecast_year_values(player_id):
+    query = batter_queries.get_actual_forecast_year_values_for_player(player_id, predict_year)
+    forecast_year_stats = batter_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
+    return forecast_year_stats
+
+
 def get_train_data(x_or_y):
     query = batter_queries.get_all_data_from_batting()
     if x_or_y == 'x':
@@ -145,7 +152,7 @@ def bulk_insert_train_data(stats, x_or_y):
 
 
 def bulk_insert_forecasted_stats(stats):
-    query = batter_queries.insert_forecasted_stats()
+    query = batter_queries.insert_forecasted_stats(forecasted_batting_categories)
     batter_queries.execute_bulk_insert_sql_query(query, stats, database_directory, forecast_database_name)
 
 
@@ -160,19 +167,20 @@ def clear_all_train_data():
 
 
 def create_forecasted_tables():
-    query = batter_queries.create_batting_forecast_table()
+    query = batter_queries.create_batting_forecast_table(forecasted_batting_categories)
     batter_queries.execute_sql_query(query, database_directory, forecast_database_name)
 
 
 def clear_forecasted_stats():
-    query = batter_queries.clear_train_data()
+    # query = batter_queries.clear_train_data()
+    query = batter_queries.remove_forecast_table()
     batter_queries.execute_sql_query(query, database_directory, forecast_database_name)
 
 
 def database_preparation():
+    clear_forecasted_stats()
     create_forecasted_tables()
     create_train_tables()
     data_config.create_config_table()
     clear_all_train_data()
-    clear_forecasted_stats()
     data_config.clear_config_table()

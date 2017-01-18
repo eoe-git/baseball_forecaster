@@ -28,8 +28,9 @@ def get_players_previous_season_stats(predict_year):
     query = """
             SELECT DISTINCT
                 batting.player_id, player.birth_year, batting.year,
-                batting.year - player.birth_year	AS age,
-                batting.g, batting.ab, batting.h, batting.double, batting.triple,
+                batting.year - player.birth_year    AS age, batting.g,
+                batting.ab + batting.bb + batting.hbp + batting.sh + batting.sf    AS pa,
+                batting.ab, batting.h, batting.double, batting.triple,
                 batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
                 batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
             FROM
@@ -51,8 +52,9 @@ def get_player_season_stats_for_career(player_id, predict_year, furthest_back):
     query = """
             SELECT
                 batting.player_id, player.birth_year, batting.year,
-                batting.year - player.birth_year	AS age,
-                batting.g, batting.ab, batting.h, batting.double, batting.triple,
+                batting.year - player.birth_year    AS age, batting.g,
+                batting.ab + batting.bb + batting.hbp + batting.sh + batting.sf    AS pa,
+                batting.ab, batting.h, batting.double, batting.triple,
                 batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
                 batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
             FROM
@@ -68,22 +70,34 @@ def get_player_season_stats_for_career(player_id, predict_year, furthest_back):
     return query
 
 
-def create_batting_forecast_table():
+def get_actual_forecast_year_values_for_player(player_id, predict_year):
     query = """
-            CREATE TABLE IF NOT EXISTS batting (
-                player_id TEXT,
-                year INTEGER,
-                age INTEGER,
-                ab NUMERIC,
-                h NUMERIC,
-                bb NUMERIC,
-                double NUMERIC,
-                triple NUMERIC,
-                hr NUMERIC,
-                r NUMERIC,
-                rbi NUMERIC,
-                sb NUMERIC)
-            """
+            SELECT
+                batting.player_id, player.birth_year, batting.year,
+                batting.year - player.birth_year    AS age, batting.g,
+                batting.ab + batting.bb + batting.hbp + batting.sh + batting.sf    AS pa,
+                batting.ab, batting.h, batting.double, batting.triple,
+                batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
+                batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
+            FROM
+                batting
+            INNER JOIN player
+                ON batting.player_id=player.player_id
+            WHERE
+                batting.year = """ + str(predict_year) + """
+                AND (batting.ab + batting.bb) >= 1
+                AND batting.player_id = '""" + player_id + "'"""
+    return query
+
+
+def create_batting_forecast_table(forecasted_stats_list):
+    query = """
+            CREATE TABLE IF NOT EXISTS batting(
+                player_id TEXT, year INTEGER, age INTEGER"""
+    for forecasted_stat in forecasted_stats_list:
+        query_line = ', ' + forecasted_stat + ' NUMERIC'
+        query += query_line
+    query += ')'
     return query
 
 
@@ -95,6 +109,7 @@ def temp_create_batting_forecast_table():
                 year INTEGER,
                 age INTEGER,
                 g NUMERIC,
+                pa NUMERIC,
                 ab NUMERIC,
                 h NUMERIC,
                 double NUMERIC,
@@ -107,7 +122,7 @@ def temp_create_batting_forecast_table():
                 bb NUMERIC,
                 so NUMERIC,
                 ibb NUMERIC,
-                hdp NUMERIC,
+                hbp NUMERIC,
                 sh NUMERIC,
                 sf NUMERIC,
                 g_idp NUMERIC)
@@ -115,13 +130,15 @@ def temp_create_batting_forecast_table():
     return query
 
 
-def insert_forecasted_stats():
+def insert_forecasted_stats(forecasted_stats_list):
     query = """
             INSERT INTO
                 batting
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
+                (?, ?, ?"""
+    for i in range(0, len(forecasted_stats_list)):
+        query += ', ?'
+    query += ')'
     return query
 
 
@@ -130,7 +147,7 @@ def insert_train_data():
             INSERT INTO
                 batting
             VALUES
-                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
     return query
 
@@ -140,6 +157,13 @@ def clear_train_data():
             DELETE
             FROM
                 batting
+            """
+    return query
+
+
+def remove_forecast_table():
+    query = """
+            DROP TABLE IF EXISTS batting
             """
     return query
 
