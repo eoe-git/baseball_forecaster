@@ -1,8 +1,8 @@
-import configparser
-import sys
-import pandas as pd
 import forecaster.batting_queries as batting_queries
 import forecaster.data_config as data_config
+import configparser
+import pandas as pd
+import sys
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
@@ -23,11 +23,8 @@ id_year_and_age = ['player_id', 'year', 'age']
 
 def get_plot_data():
     player_list = get_player_list().values.tolist()
-    count = 0
     for player in player_list:
         player = player[0]
-        if count > 3:
-            break
         player_stats = get_player_season_stats_for_career(player)
         player_stats = combine_player_stats_for_year(player_stats)
         player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
@@ -38,7 +35,6 @@ def get_plot_data():
             Y_train = player_stats[1:].values
             bulk_insert_train_data(X_train, 'x')
             bulk_insert_train_data(Y_train, 'y')
-        count += 1
 
 
 def combine_player_stats_for_year(season_stats):

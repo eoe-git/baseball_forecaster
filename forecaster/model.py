@@ -1,12 +1,12 @@
+import forecaster.forecasted_results_compare as results_compare
+import configparser
+import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVR
-import numpy as np
 from sklearn.feature_selection import SelectKBest
 from sklearn.feature_selection import mutual_info_regression
 from sklearn.model_selection import GridSearchCV
 from sklearn.feature_selection import f_regression
-import configparser
-import forecaster.forecasted_results_compare as results_compare
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
@@ -49,7 +49,7 @@ def get_forecasted_stats(X_train, Y_train, X_test, category, file):
 
         k_best = SelectKBest(mutual_info_regression, k=k_selected)
         k_best.fit_transform(X_train_std, Y_train)
-        selected_features = X_test.columns[k_best.transform(np.arange(len(X_test.columns)))]
+        selected_features = X_test.columns[k_best.transform(np.arange(len(X_test.columns)).reshape(1, -1))]
         print(str(selected_features), file=file)
         X_train_std = k_best.transform(X_train_std)
         X_test_std = k_best.transform(X_test_std)

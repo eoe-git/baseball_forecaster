@@ -1,5 +1,5 @@
-import numpy as np
 import forecaster.batting_data_preparation as batting_data
+import numpy as np
 import pandas as pd
 
 

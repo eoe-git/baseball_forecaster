@@ -1,6 +1,6 @@
 import forecaster.batting_data_preparation as batting_data
-import forecaster.model as model
 import forecaster.data_config as data_config
+import forecaster.model as model
 import forecaster.plot_data as plot_data
 import forecaster.utils as utils
 import configparser
@@ -51,7 +51,7 @@ def forecast_batter_stats():
             Y_test = model.get_forecasted_stats(X_train, Y_train, X_test, category, myfile)
             temp[category] = pd.Series(Y_test)
             Y_test_array = temp[category].values.ravel()
-            plot_data.plot_data(Y_test_array, Y_train_array, category, results_folder)
+            plot_data.plot_data(Y_train_array, Y_test_array, category, results_folder)
             print('___________________________________________', file=myfile)
 
     results = temp.values
