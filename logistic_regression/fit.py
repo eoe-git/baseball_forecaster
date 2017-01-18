@@ -8,7 +8,6 @@ from sklearn.feature_selection import f_regression
 import configparser
 import logistic_regression.forecasted_results_compare as results_compare
 
-is_ratio_stats = False
 config = configparser.ConfigParser()
 config.read('settings.cfg')
 predict_year = int(config['general']['forecast_year'])
