@@ -4,7 +4,7 @@ import os
 config = configparser.ConfigParser()
 config.read('settings.cfg')
 
-forecasted_batting_categories = config['logistic_regression']['forecasted_batting_categories'].split(',')
+forecasted_batting_categories = config['model']['forecasted_batting_categories'].split(',')
 predict_year = int(config['general']['forecast_year'])
 furthest_back_year = int(config['general']['furthest_back_year'])
 database_directory = config['general']['database_directory']

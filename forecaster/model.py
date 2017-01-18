@@ -6,14 +6,14 @@ from sklearn.feature_selection import mutual_info_regression
 from sklearn.model_selection import GridSearchCV
 from sklearn.feature_selection import f_regression
 import configparser
-import logistic_regression.forecasted_results_compare as results_compare
+import forecaster.forecasted_results_compare as results_compare
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
 predict_year = int(config['general']['forecast_year'])
 
 regression_config = configparser.ConfigParser()
-regression_config.read('logistic_regression/regression_settings.cfg')
+regression_config.read('forecaster/batting_model_settings.cfg')
 
 
 def get_forecasted_stats(X_train, Y_train, X_test, category, file):
@@ -24,7 +24,7 @@ def get_forecasted_stats(X_train, Y_train, X_test, category, file):
     X_test_std = scaler.transform(X_test)
 
     # Support Vector Regression
-    forecaster_type = str(config['logistic_regression']['forecaster'])
+    forecaster_type = str(config['model']['forecaster'])
     if forecaster_type == 'standard':
         k_selected = int(regression_config[category]['K_selected'])
         c = int(regression_config[category]['C'])
@@ -44,7 +44,7 @@ def get_forecasted_stats(X_train, Y_train, X_test, category, file):
         train_score = svr.score(X_train_std, Y_train)
         model = svr
     else:
-        parameters = {'C': [1, 10, 100], 'gamma': [0.001, 0.01, 0.1], 'epsilon': [1, 10, 100]}
+        parameters = {'C': [1, 10, 100], 'gamma': [0.001, 0.01, 0.1], 'epsilon': [0.1, 1, 10]}
         k_selected = int(regression_config[category]['K_selected'])
 
         k_best = SelectKBest(mutual_info_regression, k=k_selected)

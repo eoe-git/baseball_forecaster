@@ -1,3 +1,3 @@
-import logistic_regression.logistic_regression as logistic_regression
+import forecaster.batting_forecaster as batting_forecaster
 
-logistic_regression.forecast_batter_stats()
+batting_forecaster.forecast_batter_stats()
