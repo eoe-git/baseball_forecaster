@@ -1,31 +1,31 @@
 # baseball_forecaster
 Forecasts baseball player stats to predict future performance
 
-##Forecasting Methods
-###Curve Fitting
-Picks a specific player in the previous year to the one forecasted
 
-For each stat it find similar performing players (at each age) and groups them
+##Description
+The forecasting is performed by using all the season stats for players within the specified range. Then it will take the previous season's player stats and forecast them to the forecast year. The model used is a Support Vector Regression, and each forecasted category has specific parameter values to get the best fit.
 
-Plots the mean of those players stat results as they age (Example: x value = age and y value = hr)
+##Results
+Results are put into the forecast database's 'batting' table which is in the results folder
 
-Creates a polynomial fit of the plot and then forecasted the next year's stat from that fit
+Current Results with standard forecaster (predicting 2015, using train data from 1955 - 2014)
 
-This process happens for all the players in the previous year (that meet minimum_plate_appearances)
+Category(test score, train score): h(0.33, 0.44), hr(0.43, 0.51), r(0.33, 0.47), rbi(0.40, 0.49), sb(0.53, 0.58)
 
-####Limitations
-Only does hitter counting stats currently (ab, r, h, double, triple, hr, rbi, sb, bb)
+The standard run takes about an hour to complete
 
-Has problems with players that have only played a few seasons (not enough data to fit a good curve)
+##Limitations
+Currently it only forecasts counting stats for batting (g, pa, ab, h, double, triple, hr, r, rbi sb, cs, bb, so, ibb, hbp, sh, sf, g_idp)
 
-Cannot effectively use all of the baseball data since stat values can vary from era to era
+There are difficulties predicting outliers, since the model does not want to overfit to incorporate them
 
-There are currently performance issues due to all of the inner loops
+Does not account for players career stats, only accounts for their previous season's stats
+
 
 ##Requirements
 ###Data
 
-The data can be obtained at https://www.kaggle.com/kaggle/the-history-of-baseball
+The data can be obtained at https://www.kaggle.com/seanlahman/the-history-of-baseball
 
 The data is from [Sean Lahman's Baseball Database](http://www.seanlahman.com/baseball-archive/statistics/) and is licensed under
 [CC BY-SA 3.0 License](http://creativecommons.org/licenses/by-sa/3.0/)
@@ -33,23 +33,25 @@ The data is from [Sean Lahman's Baseball Database](http://www.seanlahman.com/bas
 Only the database.sqlite is necessary
 
 ###Python
-Python 3.4, numpy
+Python 3.4+, sklearn 0.18+, numpy, pandas, matplotlib
 
 ##Configuration
-Configuration is done through settings.cfg
+Configuration is in the settings.cfg
+
+The SVR parameters can be modified in forecaster/batting_model_setting.cfg (there are existing default values)
 
 ###Required
 database_directory: (Enter the path to where the database is located)
 
-database_name: (Enter the database name, including .sqlite)
+database_name: (Enter the database name including .sqlite, only necessary if it was changed from database.sqlite)
 
 ###Other Settings
-forecast_year: (Enter the year that you want forecasted, it cannot be beyond 2016)
+forecasted_batting_categories: (Stats to be predicted, the full list of catagories can be seen in the settings file)
 
-furthest_back_year: (Enter the furthest year back you want compared players stats to be from)
+forecaster: (standard will run all the stats using previously tuned C, epsilon and gamma values. complete will tune the parameters during the next run, which will cause the run to take much longer)
 
-minimum_plate_appearances: (Enter the minimum plate appearances a player must have in that year to be eligible for comparison)
+forecast_year: (The year that you want forecasted, it cannot be beyond 2016)
 
-number_of_closest_players: (Enter how many players you want to be used in plotting for the stat trend)
+furthest_back_year: (The furthest year back you want player data from, it cannot be before 1955)
 
-polynomial_order: (Enter the order of the polynomial you want to use for the fit)
+minimum_plate_appearances: (The minimum plate appearances a player must have to be added to the model)
