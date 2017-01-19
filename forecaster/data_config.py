@@ -5,8 +5,8 @@ import forecaster.batting_queries as batting_queries
 config = configparser.ConfigParser()
 config.read('settings.cfg')
 
-database_directory = config['general']['database_directory']
 forecast_database_name = config['general']['forecast_database_name']
+results_directory = 'results/'
 
 
 def create_config_table_query():
@@ -53,22 +53,22 @@ def clear_config_table_query():
 
 def create_config_table():
     query = create_config_table_query()
-    batting_queries.execute_sql_query(query, database_directory, forecast_database_name)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
 def clear_config_table():
     query = clear_config_table_query()
-    batting_queries.execute_sql_query(query, database_directory, forecast_database_name)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
 def insert_config_value(insert_values):
     query = insert_config_value_query()
-    batting_queries.execute_insert_sql_query(query, insert_values, database_directory, forecast_database_name)
+    batting_queries.execute_insert_sql_query(query, insert_values, results_directory, forecast_database_name)
 
 
 def value_does_not_exist_in_config_table(section, setting, value):
     query = get_config_value_query(section, setting, value)
-    results = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, forecast_database_name)
+    results = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
     if results.__len__() == 0:
         return True
     else:

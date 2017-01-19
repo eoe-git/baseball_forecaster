@@ -101,9 +101,8 @@ def create_batting_forecast_table(forecasted_stats_list):
     return query
 
 
-def temp_create_batting_forecast_table():
-    query = """
-            CREATE TABLE IF NOT EXISTS batting (
+def temp_create_batting_forecast_table(batting_table):
+    query = "CREATE TABLE IF NOT EXISTS " + batting_table + """_batting(
                 player_id TEXT,
                 birth_year INTEGER,
                 year INTEGER,
@@ -142,22 +141,21 @@ def insert_forecasted_stats(forecasted_stats_list):
     return query
 
 
-def insert_train_data():
+def insert_train_data(batting_table):
     query = """
             INSERT INTO
-                batting
+                """ + batting_table + """_batting
             VALUES
                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
     return query
 
 
-def clear_train_data():
+def clear_train_data(batting_table):
     query = """
             DELETE
             FROM
-                batting
-            """
+                """ + batting_table + "_batting"
     return query
 
 
@@ -168,13 +166,12 @@ def remove_forecast_table():
     return query
 
 
-def get_all_data_from_batting():
+def get_all_data_from_batting(batting_table):
     query = """
             SELECT
                 *
             FROM
-                batting
-            """
+            """ + batting_table + "_batting "
     return query
 
 

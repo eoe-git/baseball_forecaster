@@ -27,8 +27,8 @@ def forecast_batter_stats():
 
     X_test = batting_data.combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(
         batting_data.get_players_previous_season_stats())
-    X_train = batting_data.get_train_data('x')
-    Y_train_stats = batting_data.get_train_data('y')
+    X_train = batting_data.get_train_data('x_train')
+    Y_train_stats = batting_data.get_train_data('y_train')
 
     temp = pd.DataFrame()
     # temp columns need to be added before the columns are removed for forecasting the data

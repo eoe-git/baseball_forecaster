@@ -10,12 +10,11 @@ config.read('settings.cfg')
 database_directory = config['general']['database_directory']
 database_name = config['general']['database_name']
 forecast_database_name = config['general']['forecast_database_name']
-x_train_database_name = config['general']['x_train_database_name']
-y_train_database_name = config['general']['y_train_database_name']
 predict_year = int(config['general']['forecast_year'])
 furthest_back_year = int(config['general']['furthest_back_year'])
 minimum_plate_appearances = int(config['general']['minimum_plate_appearances'])
 forecasted_batting_categories = config['model']['forecasted_batting_categories'].split(',')
+results_directory = 'results/'
 
 non_stat_categories = ['player_id', 'birth_year']
 id_year_and_age = ['player_id', 'year', 'age']
@@ -33,8 +32,8 @@ def get_plot_data():
         else:
             X_train = player_stats[:-1].values
             Y_train = player_stats[1:].values
-            bulk_insert_train_data(X_train, 'x')
-            bulk_insert_train_data(Y_train, 'y')
+            bulk_insert_train_data(X_train, 'x_train')
+            bulk_insert_train_data(Y_train, 'y_train')
 
 
 def combine_player_stats_for_year(season_stats):
@@ -103,74 +102,50 @@ def get_actual_forecast_year_values(player_id):
 
 
 def get_train_data(x_or_y):
-    query = batting_queries.get_all_data_from_batting()
-    if x_or_y == 'x':
-        train_data = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, x_train_database_name)
-    elif x_or_y == 'y':
-        train_data = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, y_train_database_name)
-    elif x_or_y != 'x' and x_or_y != 'y':
-        print('The train data is only x or y; not ' + x_or_y)
-        sys.exit()
+    query = batting_queries.get_all_data_from_batting(x_or_y)
+    train_data = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
     return train_data
 
 
 def create_train_database_and_table(x_or_y):
-    query = batting_queries.temp_create_batting_forecast_table()
-    if x_or_y == 'x':
-        batting_queries.execute_sql_query(query, database_directory, x_train_database_name)
-    elif x_or_y == 'y':
-        batting_queries.execute_sql_query(query, database_directory, y_train_database_name)
-    elif x_or_y != 'x' and x_or_y != 'y':
-        print('The train data is only x or y; not ' + x_or_y)
-        sys.exit()
+    query = batting_queries.temp_create_batting_forecast_table(x_or_y)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
 def clear_train_data(x_or_y):
-    query = batting_queries.clear_train_data()
-    if x_or_y == 'x':
-        batting_queries.execute_sql_query(query, database_directory, x_train_database_name)
-    elif x_or_y == 'y':
-        batting_queries.execute_sql_query(query, database_directory, y_train_database_name)
-    elif x_or_y != 'x' and x_or_y != 'y':
-        print('The train data is only x or y; not ' + x_or_y)
-        sys.exit()
+    query = batting_queries.clear_train_data(x_or_y)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
 def bulk_insert_train_data(stats, x_or_y):
-    query = batting_queries.insert_train_data()
-    if x_or_y == 'x':
-        batting_queries.execute_bulk_insert_sql_query(query, stats, database_directory, x_train_database_name)
-    elif x_or_y == 'y':
-        batting_queries.execute_bulk_insert_sql_query(query, stats, database_directory, y_train_database_name)
-    elif x_or_y != 'x' and x_or_y != 'y':
-        print('The train data is only x or y; not ' + x_or_y)
-        sys.exit()
+    query = batting_queries.insert_train_data(x_or_y)
+    batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
 def bulk_insert_forecasted_stats(stats):
     query = batting_queries.insert_forecasted_stats(forecasted_batting_categories)
-    batting_queries.execute_bulk_insert_sql_query(query, stats, database_directory, forecast_database_name)
+    batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
 def create_train_tables():
-    create_train_database_and_table('x')
-    create_train_database_and_table('y')
+    create_train_database_and_table('x_train')
+    create_train_database_and_table('y_train')
 
 
 def clear_all_train_data():
-    clear_train_data('x')
-    clear_train_data('y')
+    clear_train_data('x_train')
+    clear_train_data('y_train')
 
 
 def create_forecasted_tables():
     query = batting_queries.create_batting_forecast_table(forecasted_batting_categories)
-    batting_queries.execute_sql_query(query, database_directory, forecast_database_name)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
 def clear_forecasted_stats():
     # query = batter_queries.clear_train_data()
     query = batting_queries.remove_forecast_table()
-    batting_queries.execute_sql_query(query, database_directory, forecast_database_name)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
 def database_preparation():
