@@ -30,9 +30,9 @@ def forecast_batter_stats():
     X_train = batting_data.get_train_data('x_train')
     Y_train_stats = batting_data.get_train_data('y_train')
 
-    temp = pd.DataFrame()
-    # temp columns need to be added before the columns are removed for forecasting the data
-    temp = batting_data.add_id_year_and_age_for_test_data_to_temp_df(temp, X_test)
+    results = pd.DataFrame()
+    # results columns need to be added before the columns are removed for forecasting the data
+    results = batting_data.add_id_year_and_age_for_test_data_to_results_df(results, X_test)
 
     X_test = batting_data.drop_unused_columns_for_forecasting(X_test)
     X_train = batting_data.drop_unused_columns_for_forecasting(X_train)
@@ -49,10 +49,9 @@ def forecast_batter_stats():
             Y_train_array = Y_train.values.ravel()
 
             Y_test = model.get_forecasted_stats(X_train, Y_train, X_test, category, myfile)
-            temp[category] = pd.Series(Y_test)
-            Y_test_array = temp[category].values.ravel()
+            results[category] = pd.Series(Y_test)
+            Y_test_array = results[category].values.ravel()
             plot_data.plot_data(Y_train_array, Y_test_array, category, results_folder)
             print('___________________________________________', file=myfile)
 
-    results = temp.values
-    batting_data.bulk_insert_forecasted_stats(results)
+    batting_data.bulk_insert_forecasted_stats(results.values)

@@ -2,7 +2,6 @@ import forecaster.batting_queries as batting_queries
 import forecaster.data_config as data_config
 import configparser
 import pandas as pd
-import sys
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
@@ -45,7 +44,7 @@ def combine_player_stats_for_year(season_stats):
 def remove_any_stats_that_dont_meet_min_pa(season_stats):
     temp = season_stats
     for i, season in season_stats.iterrows():
-        plate_appearances = season['ab'] + season['bb']
+        plate_appearances = season['ab'] + season['bb'] + season['hbp'] + season['sh'] + season['sf']
         if plate_appearances < minimum_plate_appearances:
             temp.drop(i, inplace=True)
     temp = temp.reset_index(drop=True)
@@ -71,7 +70,7 @@ def drop_unused_columns_for_forecasting(data):
     return data
 
 
-def add_id_year_and_age_for_test_data_to_temp_df(temp, X_test):
+def add_id_year_and_age_for_test_data_to_results_df(temp, X_test):
     for i in id_year_and_age:
         temp[i] = pd.Series(X_test[i])
     return temp
