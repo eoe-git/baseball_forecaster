@@ -66,13 +66,16 @@ def drop_unused_columns_for_forecasting(data):
     for i in categories:
         if i in non_stat_categories:
             data = data.drop(i, 1)
-
     return data
 
 
 def add_id_year_and_age_for_test_data_to_results_df(temp, X_test):
     for i in id_year_and_age:
-        temp[i] = pd.Series(X_test[i])
+        # The year cannot be the first column added
+        if i == 'year':
+            temp[i] = predict_year
+        else:
+            temp[i] = pd.Series(X_test[i])
     return temp
 
 
