@@ -55,3 +55,4 @@ def forecast_batter_stats():
             print('___________________________________________', file=myfile)
 
     batting_data.bulk_insert_forecasted_stats(results.values)
+    utils.write_results_into_csv(results)

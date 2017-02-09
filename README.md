@@ -6,7 +6,7 @@ Forecasts baseball player stats to predict future performance
 The forecasting is performed by using all the season stats for players within the specified range. Then it will take the previous season's player stats and forecast them to the forecast year. The model used is a Support Vector Regression, and each forecasted category has specific parameter values to get the best fit.
 
 ##Results
-Results are put into the forecast database's 'batting' table which is in the results folder
+Results are put into the results.csv and the forecast database's 'batting' table in the results folder
 
 Current Results with standard forecaster (predicting 2015, using train data from 1955 - 2014)
 
