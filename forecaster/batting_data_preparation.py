@@ -2,6 +2,7 @@ import forecaster.batting_queries as batting_queries
 import forecaster.data_config as data_config
 import configparser
 import pandas as pd
+import numpy as np
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
@@ -16,23 +17,72 @@ forecasted_batting_categories = config['model']['forecasted_batting_categories']
 results_directory = 'results/'
 
 non_stat_categories = ['player_id', 'birth_year']
+non_stat_categories_by_age = ['player_id', 'birth_year', 'age']
 id_year_and_age = ['player_id', 'year', 'age']
+stat_categories_list = ['year', 'g', 'pa', 'ab', 'h', 'double', 'triple', 'hr', 'r', 'rbi', 'sb', 'cs', 'bb', 'so',
+                        'ibb', 'hbp', 'sh', 'sf', 'g_idp']
 
 
 def get_plot_data():
     player_list = get_player_list().values.tolist()
     for player in player_list:
         player = player[0]
+        print(player)
         player_stats = get_player_season_stats_for_career(player)
         player_stats = combine_player_stats_for_year(player_stats)
         player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
-        if len(player_stats) == 1:
+
+        if len(player_stats) == 1 or len(player_stats) == 0:
             continue  # cannot get predict data if sample is only 1 since current and future year are compared
         else:
             X_train = player_stats[:-1].values
             Y_train = player_stats[1:].values
+            X_train_career_by_age = train_data_for_career_by_age(player, player_stats, stat_categories_list)
             bulk_insert_train_data(X_train, 'x_train')
+            bulk_insert_train_by_age_data(X_train_career_by_age)
             bulk_insert_train_data(Y_train, 'y_train')
+
+
+def train_data_for_career_by_age(player, player_season_stats, stat_categories):
+    min_age = 16
+    max_age = 50
+
+    player_ages = player_season_stats.age
+    player_season_stats = drop_unused_columns_for_forecasting_by_age(player_season_stats)
+
+    player_min_age = player_ages[0]
+    pad_start = np.zeros(((player_min_age - min_age) * len(stat_categories)))
+
+    previous_age = player_min_age
+    player_stats = np.array(np.empty(((max_age - min_age + 1) * len(stat_categories)) + 1), dtype=object)
+    player_stats_base = np.array([player], dtype=object)
+    player_stats_base = np.concatenate((player_stats_base, pad_start))
+    for age, season_stat in zip(player_ages, player_season_stats.itertuples()):
+        player_season_stats = player_stats_base
+        season_stat_array = np.array(season_stat[1:]).astype('float')
+
+        if age == player_min_age:
+            player_season_stats = np.concatenate((player_season_stats, season_stat_array))
+        elif (age - previous_age) == 1:
+            player_season_stats = np.concatenate((player_season_stats, season_stat_array))
+        elif (age - previous_age) > 1:
+            age_diff = age - previous_age
+            player_season_stats = np.concatenate((player_season_stats, np.zeros(len(stat_categories) * (age_diff - 1))))
+            player_season_stats = np.concatenate((player_season_stats, season_stat_array))
+        elif (age - previous_age) <= 0:
+            print("Error player has two entries with the same age")
+
+        previous_age = age
+        player_stats_base = player_season_stats
+        pad_end = np.zeros((max_age - age) * len(stat_categories))
+        player_season_stats = np.concatenate((player_season_stats, pad_end))
+        player_stats = np.vstack((player_stats, player_season_stats))
+
+    # remove the first entry since it was an initialized row
+    player_stats = np.delete(player_stats, 0, axis=0)
+    # remove the final entry since it cannot be used to train
+    player_stats = np.delete(player_stats, len(player_ages) - 1, axis=0)
+    return player_stats
 
 
 def combine_player_stats_for_year(season_stats):
@@ -65,6 +115,14 @@ def drop_unused_columns_for_forecasting(data):
     categories = list(data.keys())
     for i in categories:
         if i in non_stat_categories:
+            data = data.drop(i, 1)
+    return data
+
+
+def drop_unused_columns_for_forecasting_by_age(data):
+    categories = list(data.keys())
+    for i in categories:
+        if i in non_stat_categories_by_age:
             data = data.drop(i, 1)
     return data
 
@@ -114,13 +172,28 @@ def create_train_database_and_table(x_or_y):
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
+def create_train_database_by_age_and_table():
+    query = batting_queries.create_player_career_stats_table_by_age(stat_categories_list)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
+
+
 def clear_train_data(x_or_y):
     query = batting_queries.clear_train_data(x_or_y)
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
+def clear_train_by_age_data():
+    query = batting_queries.clear_train_by_age_data()
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
+
+
 def bulk_insert_train_data(stats, x_or_y):
     query = batting_queries.insert_train_data(x_or_y)
+    batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
+
+
+def bulk_insert_train_by_age_data(stats):
+    query = batting_queries.insert_train_player_career_stats_by_age(stat_categories_list)
     batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
@@ -132,11 +205,13 @@ def bulk_insert_forecasted_stats(stats):
 def create_train_tables():
     create_train_database_and_table('x_train')
     create_train_database_and_table('y_train')
+    create_train_database_by_age_and_table()
 
 
 def clear_all_train_data():
     clear_train_data('x_train')
     clear_train_data('y_train')
+    clear_train_by_age_data()
 
 
 def create_forecasted_tables():

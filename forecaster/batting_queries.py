@@ -1,6 +1,9 @@
 import sqlite3
 import pandas as pd
 
+stat_categories_list = ['g', 'pa', 'ab', 'h', 'double', 'triple', 'hr', 'r', 'rbi', 'sb', 'cs', 'bb', 'so',
+                        'ibb', 'hbp', 'sh', 'sf', 'g_idp']
+
 
 # this will miss some players that have low AB and only play as DH
 # Example year (2014) player 'giambja01' will not show up for the predict year 2015
@@ -93,7 +96,8 @@ def get_actual_forecast_year_values_for_player(player_id, predict_year):
 def create_batting_forecast_table(forecasted_stats_list):
     query = """
             CREATE TABLE IF NOT EXISTS batting(
-                player_id TEXT, year INTEGER, age INTEGER"""
+                player_id TEXT, year INTEGER, age INTEGER
+            """
     for forecasted_stat in forecasted_stats_list:
         query_line = ', ' + forecasted_stat + ' NUMERIC'
         query += query_line
@@ -129,12 +133,28 @@ def temp_create_batting_forecast_table(batting_table):
     return query
 
 
+def create_player_career_stats_table_by_age(stat_categories):
+    min_age = 16
+    max_age = 50
+    query = """
+            CREATE TABLE IF NOT EXISTS x_career_batting_by_age(
+                player_id TEXT
+            """
+    for age in range(min_age, max_age + 1):
+        for forecasted_stat in stat_categories:
+            query_line = ', ' + forecasted_stat + '_age' + str(age) + ' NUMERIC'
+            query += query_line
+    query += ')'
+    return query
+
+
 def insert_forecasted_stats(forecasted_stats_list):
     query = """
             INSERT INTO
                 batting
             VALUES
-                (?, ?, ?"""
+                (?, ?, ?
+            """
     for i in range(0, len(forecasted_stats_list)):
         query += ', ?'
     query += ')'
@@ -151,11 +171,36 @@ def insert_train_data(batting_table):
     return query
 
 
+def insert_train_player_career_stats_by_age(stat_categories):
+    min_age = 16
+    max_age = 50
+    query = """
+            INSERT INTO
+                x_career_batting_by_age
+            VALUES
+                (?
+            """
+    for i in range(min_age, max_age + 1):
+        for j in range(0, len(stat_categories)):
+            query += ', ?'
+    query += ')'
+    return query
+
+
 def clear_train_data(batting_table):
     query = """
             DELETE
             FROM
                 """ + batting_table + "_batting"
+    return query
+
+
+def clear_train_by_age_data():
+    query = """
+            DELETE
+            FROM
+                x_career_batting_by_age
+            """
     return query
 
 
