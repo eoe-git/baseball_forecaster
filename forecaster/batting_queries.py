@@ -1,9 +1,6 @@
 import sqlite3
 import pandas as pd
 
-stat_categories_list = ['g', 'pa', 'ab', 'h', 'double', 'triple', 'hr', 'r', 'rbi', 'sb', 'cs', 'bb', 'so',
-                        'ibb', 'hbp', 'sh', 'sf', 'g_idp']
-
 
 # this will miss some players that have low AB and only play as DH
 # Example year (2014) player 'giambja01' will not show up for the predict year 2015
@@ -148,6 +145,24 @@ def create_player_career_stats_table_by_age(stat_categories):
     return query
 
 
+def create_player_career_stats_table_by_experience(stat_categories):
+    min_age = 16
+    max_age = 50
+
+    min_exp = 0
+    max_exp = max_age - min_age + 1
+    query = """
+            CREATE TABLE IF NOT EXISTS x_career_batting_by_experience(
+                player_id TEXT
+            """
+    for exp in range(min_exp, max_exp):
+        for forecasted_stat in stat_categories:
+            query_line = ', ' + forecasted_stat + '_experience' + str(exp) + ' NUMERIC'
+            query += query_line
+    query += ')'
+    return query
+
+
 def insert_forecasted_stats(forecasted_stats_list):
     query = """
             INSERT INTO
@@ -187,6 +202,25 @@ def insert_train_player_career_stats_by_age(stat_categories):
     return query
 
 
+def insert_train_player_career_stats_by_experience(stat_categories):
+    min_age = 16
+    max_age = 50
+
+    min_exp = 0
+    max_exp = max_age - min_age + 1
+    query = """
+            INSERT INTO
+                x_career_batting_by_experience
+            VALUES
+                (?
+            """
+    for i in range(min_exp, max_exp):
+        for j in range(0, len(stat_categories)):
+            query += ', ?'
+    query += ')'
+    return query
+
+
 def clear_train_data(batting_table):
     query = """
             DELETE
@@ -200,6 +234,15 @@ def clear_train_by_age_data():
             DELETE
             FROM
                 x_career_batting_by_age
+            """
+    return query
+
+
+def clear_train_by_experience_data():
+    query = """
+            DELETE
+            FROM
+                x_career_batting_by_experience
             """
     return query
 

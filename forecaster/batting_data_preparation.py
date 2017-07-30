@@ -27,7 +27,6 @@ def get_plot_data():
     player_list = get_player_list().values.tolist()
     for player in player_list:
         player = player[0]
-        print(player)
         player_stats = get_player_season_stats_for_career(player)
         player_stats = combine_player_stats_for_year(player_stats)
         player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
@@ -38,8 +37,10 @@ def get_plot_data():
             X_train = player_stats[:-1].values
             Y_train = player_stats[1:].values
             X_train_career_by_age = train_data_for_career_by_age(player, player_stats, stat_categories_list)
+            X_train_career_by_exp = train_data_for_career_by_experience(player, player_stats, stat_categories_list)
             bulk_insert_train_data(X_train, 'x_train')
             bulk_insert_train_by_age_data(X_train_career_by_age)
+            bulk_insert_train_by_experience_data(X_train_career_by_exp)
             bulk_insert_train_data(Y_train, 'y_train')
 
 
@@ -82,6 +83,48 @@ def train_data_for_career_by_age(player, player_season_stats, stat_categories):
     player_stats = np.delete(player_stats, 0, axis=0)
     # remove the final entry since it cannot be used to train
     player_stats = np.delete(player_stats, len(player_ages) - 1, axis=0)
+    return player_stats
+
+
+def train_data_for_career_by_experience(player, player_season_stats, stat_categories):
+    min_age = 16
+    max_age = 50
+
+    player_ages = player_season_stats.age
+    player_season_stats = drop_unused_columns_for_forecasting_by_age(player_season_stats)
+
+    player_min_age = player_ages[0]
+    player_exp = player_ages - player_min_age
+
+    previous_exp = 0
+    max_exp = max_age - min_age + 1
+    player_stats = np.array(np.empty(((max_age - min_age + 1) * len(stat_categories)) + 1), dtype=object)
+    player_stats_base = np.array([player], dtype=object)
+    for exp, season_stat in zip(player_exp, player_season_stats.itertuples()):
+        player_season_stats = player_stats_base
+        season_stat_array = np.array(season_stat[1:]).astype('float')
+
+        if exp == 0:
+            player_season_stats = np.concatenate((player_season_stats, season_stat_array))
+        elif (exp - previous_exp) == 1:
+            player_season_stats = np.concatenate((player_season_stats, season_stat_array))
+        elif (exp - previous_exp) > 1:
+            exp_diff = exp - previous_exp
+            player_season_stats = np.concatenate((player_season_stats, np.zeros(len(stat_categories) * (exp_diff - 1))))
+            player_season_stats = np.concatenate((player_season_stats, season_stat_array))
+        elif (exp - previous_exp) <= 0:
+            print("Error player has two entries with the same experience")
+
+        previous_exp = exp
+        player_stats_base = player_season_stats
+        pad_end = np.zeros((max_exp - exp - 1) * len(stat_categories))
+        player_season_stats = np.concatenate((player_season_stats, pad_end))
+        player_stats = np.vstack((player_stats, player_season_stats))
+
+    # remove the first entry since it was an initialized row
+    player_stats = np.delete(player_stats, 0, axis=0)
+    # remove the final entry since it cannot be used to train
+    player_stats = np.delete(player_stats, len(player_exp) - 1, axis=0)
     return player_stats
 
 
@@ -177,6 +220,11 @@ def create_train_database_by_age_and_table():
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
+def create_train_database_by_experience_and_table():
+    query = batting_queries.create_player_career_stats_table_by_experience(stat_categories_list)
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
+
+
 def clear_train_data(x_or_y):
     query = batting_queries.clear_train_data(x_or_y)
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
@@ -184,6 +232,11 @@ def clear_train_data(x_or_y):
 
 def clear_train_by_age_data():
     query = batting_queries.clear_train_by_age_data()
+    batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
+
+
+def clear_train_by_experience_data():
+    query = batting_queries.clear_train_by_experience_data()
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
@@ -197,6 +250,11 @@ def bulk_insert_train_by_age_data(stats):
     batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
+def bulk_insert_train_by_experience_data(stats):
+    query = batting_queries.insert_train_player_career_stats_by_experience(stat_categories_list)
+    batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
+
+
 def bulk_insert_forecasted_stats(stats):
     query = batting_queries.insert_forecasted_stats(forecasted_batting_categories)
     batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
@@ -206,12 +264,14 @@ def create_train_tables():
     create_train_database_and_table('x_train')
     create_train_database_and_table('y_train')
     create_train_database_by_age_and_table()
+    create_train_database_by_experience_and_table()
 
 
 def clear_all_train_data():
     clear_train_data('x_train')
     clear_train_data('y_train')
     clear_train_by_age_data()
+    clear_train_by_experience_data()
 
 
 def create_forecasted_tables():
