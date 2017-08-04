@@ -44,6 +44,46 @@ def get_plot_data():
             bulk_insert_train_data(Y_train, 'y_train')
 
 
+def get_test_data_by_age():
+    min_age = 16
+    max_age = 50
+
+    player_list = get_test_player_list().values.tolist()
+    X_test = np.array(np.empty(((max_age - min_age + 1) * len(stat_categories_list)) + 1), dtype=object)
+    for player in player_list:
+        player = player[0]
+        player_stats = get_player_season_stats_for_career(player)
+        player_stats = combine_player_stats_for_year(player_stats)
+        player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
+
+        if len(player_stats) != 0:
+            player_test_stats = test_data_for_career_by_age(player, player_stats, stat_categories_list)
+            X_test = np.vstack((X_test, player_test_stats))
+
+    X_test = np.delete(X_test, 0, axis=0)
+    return X_test
+
+
+def get_test_data_by_experience():
+    min_age = 16
+    max_age = 50
+
+    player_list = get_test_player_list().values.tolist()
+    X_test = np.array(np.empty(((max_age - min_age + 1) * len(stat_categories_list)) + 1), dtype=object)
+    for player in player_list:
+        player = player[0]
+        player_stats = get_player_season_stats_for_career(player)
+        player_stats = combine_player_stats_for_year(player_stats)
+        player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
+
+        if len(player_stats) != 0:
+            player_test_stats = test_data_for_career_by_experience(player, player_stats, stat_categories_list)
+            X_test = np.vstack((X_test, player_test_stats))
+
+    X_test = np.delete(X_test, 0, axis=0)
+    return X_test
+
+
 def train_data_for_career_by_age(player, player_season_stats, stat_categories):
     min_age = 16
     max_age = 50
@@ -128,6 +168,77 @@ def train_data_for_career_by_experience(player, player_season_stats, stat_catego
     return player_stats
 
 
+def test_data_for_career_by_age(player, player_season_stats, stat_categories):
+    min_age = 16
+    max_age = 50
+
+    player_ages = player_season_stats.age
+    player_season_stats = drop_unused_columns_for_forecasting_by_age(player_season_stats)
+
+    player_min_age = player_ages[0]
+    player_max_age = player_ages.iloc[-1]
+    pad_start = np.zeros(((player_min_age - min_age) * len(stat_categories)))
+
+    previous_age = player_min_age
+    player_stats = np.array([player], dtype=object)
+    player_stats = np.concatenate((player_stats, pad_start))
+    for age, season_stat in zip(player_ages, player_season_stats.itertuples()):
+        season_stat_array = np.array(season_stat[1:]).astype('float')
+
+        if age == player_min_age:
+            player_stats = np.concatenate((player_stats, season_stat_array))
+        elif (age - previous_age) == 1:
+            player_stats = np.concatenate((player_stats, season_stat_array))
+        elif (age - previous_age) > 1:
+            age_diff = age - previous_age
+            player_stats = np.concatenate((player_stats, np.zeros(len(stat_categories) * (age_diff - 1))))
+            player_stats = np.concatenate((player_stats, season_stat_array))
+        elif (age - previous_age) <= 0:
+            print("Error player has two entries with the same age")
+
+        previous_age = age
+
+    pad_end = np.zeros((max_age - player_max_age) * len(stat_categories))
+    player_stats = np.concatenate((player_stats, pad_end))
+    return player_stats
+
+
+def test_data_for_career_by_experience(player, player_season_stats, stat_categories):
+    min_age = 16
+    max_age = 50
+
+    max_exp = max_age - min_age + 1
+    player_ages = player_season_stats.age
+    player_season_stats = drop_unused_columns_for_forecasting_by_age(player_season_stats)
+
+    player_min_age = player_ages[0]
+    player_exp = player_ages - player_min_age
+    player_min_exp = player_exp[0]
+    player_max_exp = player_exp.iloc[-1]
+
+    previous_exp = player_min_exp
+    player_stats = np.array([player], dtype=object)
+    for exp, season_stat in zip(player_exp, player_season_stats.itertuples()):
+        season_stat_array = np.array(season_stat[1:]).astype('float')
+
+        if exp == player_min_exp:
+            player_stats = np.concatenate((player_stats, season_stat_array))
+        elif (exp - previous_exp) == 1:
+            player_stats = np.concatenate((player_stats, season_stat_array))
+        elif (exp - previous_exp) > 1:
+            exp_diff = exp - previous_exp
+            player_stats = np.concatenate((player_stats, np.zeros(len(stat_categories) * (exp_diff - 1))))
+            player_stats = np.concatenate((player_stats, season_stat_array))
+        elif (exp - previous_exp) <= 0:
+            print("Error player has two entries with the same exp")
+
+        previous_exp = exp
+
+    pad_end = np.zeros((max_exp - player_max_exp - 1) * len(stat_categories))
+    player_stats = np.concatenate((player_stats, pad_end))
+    return player_stats
+
+
 def combine_player_stats_for_year(season_stats):
     cols = ['player_id', 'birth_year', 'year', 'age']
     season_stats = season_stats.groupby(cols, as_index=False, sort=False).sum()
@@ -182,6 +293,12 @@ def add_id_year_and_age_for_test_data_to_results_df(temp, X_test):
 
 def get_player_list():
     query = batting_queries.get_player_list(predict_year, furthest_back_year)
+    player_list = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
+    return player_list
+
+
+def get_test_player_list():
+    query = batting_queries.get_test_player_list(predict_year)
     player_list = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_list
 

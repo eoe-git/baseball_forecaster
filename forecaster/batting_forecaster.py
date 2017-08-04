@@ -26,8 +26,10 @@ def forecast_batter_stats():
     results_file = results_folder + 'Results.txt'
 
     X_test = batting_data.combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(
-        batting_data.get_players_previous_season_stats())
-    X_train = batting_data.get_train_data('x_train')
+              batting_data.get_players_previous_season_stats())
+    # X_test = batting_data.get_test_data_by_age()
+    # X_test = batting_data.get_test_data_by_experience()
+    # X_train = batting_data.get_train_data('x_train')
     Y_train_stats = batting_data.get_train_data('y_train')
 
     results = pd.DataFrame()

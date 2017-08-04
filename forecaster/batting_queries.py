@@ -22,6 +22,23 @@ def get_player_list(predict_year, furthest_back):
     return query
 
 
+def get_test_player_list(predict_year):
+    query = """
+            SELECT
+                DISTINCT batting.player_id
+            FROM
+                batting
+            INNER JOIN fielding
+                ON batting.player_id = fielding.player_id
+                AND batting.year=fielding.year
+            WHERE
+                batting.year == """ + str(predict_year - 1) + """
+                AND (batting.ab + batting.bb) >= 1
+                AND fielding.pos != 'P'
+            """
+    return query
+
+
 # this will miss some players that have low AB and only play as DH
 # Example year (2014) player 'giambja01' will not show up for the predict year 2015
 def get_players_previous_season_stats(predict_year):
