@@ -4,7 +4,7 @@ import pandas as pd
 
 # this will miss some players that have low AB and only play as DH
 # Example year (2014) player 'giambja01' will not show up for the predict year 2015
-def get_player_list(predict_year, furthest_back):
+def get_player_list(furthest_back):
     query = """
             SELECT
                 DISTINCT batting.player_id
@@ -15,7 +15,6 @@ def get_player_list(predict_year, furthest_back):
                 AND batting.year=fielding.year
             WHERE
                 batting.year >= """ + str(furthest_back) + """
-                AND batting.year <= """ + str(predict_year - 1) + """
                 AND (batting.ab + batting.bb) >= 1
                 AND fielding.pos != 'P'
             """
@@ -39,33 +38,7 @@ def get_test_player_list(predict_year):
     return query
 
 
-# this will miss some players that have low AB and only play as DH
-# Example year (2014) player 'giambja01' will not show up for the predict year 2015
-def get_players_previous_season_stats(predict_year):
-    query = """
-            SELECT DISTINCT
-                batting.player_id, player.birth_year, batting.year,
-                batting.year - player.birth_year    AS age, batting.g,
-                batting.ab + batting.bb + batting.hbp + batting.sh + batting.sf    AS pa,
-                batting.ab, batting.h, batting.double, batting.triple,
-                batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
-                batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
-            FROM
-                batting
-            INNER JOIN player
-                ON batting.player_id=player.player_id
-            INNER JOIN fielding
-                ON player.player_id=fielding.player_id
-                AND batting.year=fielding.year
-            WHERE
-                batting.year = """ + str(predict_year - 1) + """
-                AND (batting.ab + batting.bb) >= 1
-                AND fielding.pos != 'P'
-            """
-    return query
-
-
-def get_player_season_stats_for_career(player_id, predict_year, furthest_back):
+def get_player_season_stats_for_career(player_id, furthest_back):
     query = """
             SELECT
                 batting.player_id, player.birth_year, batting.year,
@@ -81,35 +54,28 @@ def get_player_season_stats_for_career(player_id, predict_year, furthest_back):
             WHERE
                 player.player_id = '""" + str(player_id) + "'""""
                 AND batting.year >= """ + str(furthest_back) + """
-                AND batting.year <= """ + str(predict_year - 1) + """
                 AND (batting.ab + batting.bb) >  1
             """
     return query
 
 
-def get_actual_forecast_year_values_for_player(player_id, predict_year):
+def get_player_season_stats_for_test_set(table_name, predict_year):
     query = """
             SELECT
-                batting.player_id, player.birth_year, batting.year,
-                batting.year - player.birth_year    AS age, batting.g,
-                batting.ab + batting.bb + batting.hbp + batting.sh + batting.sf    AS pa,
-                batting.ab, batting.h, batting.double, batting.triple,
-                batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
-                batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
+                *
             FROM
-                batting
-            INNER JOIN player
-                ON batting.player_id=player.player_id
+                """ + table_name + """
             WHERE
-                batting.year = """ + str(predict_year) + """
-                AND (batting.ab + batting.bb) >= 1
-                AND batting.player_id = '""" + player_id + "'"""
+                year = """ + str(predict_year - 1) + """
+            ORDER BY
+                player_id
+            """
     return query
 
 
-def create_batting_forecast_table(forecasted_stats_list):
+def create_forecasted_batting_table(forecasted_stats_list):
     query = """
-            CREATE TABLE IF NOT EXISTS batting(
+            CREATE TABLE IF NOT EXISTS forecasted_batting(
                 player_id TEXT, year INTEGER, age INTEGER
             """
     for forecasted_stat in forecasted_stats_list:
@@ -119,8 +85,8 @@ def create_batting_forecast_table(forecasted_stats_list):
     return query
 
 
-def temp_create_batting_forecast_table(batting_table):
-    query = "CREATE TABLE IF NOT EXISTS " + batting_table + """_batting(
+def create_standard_batting_table():
+    query = """CREATE TABLE IF NOT EXISTS standard_batting(
                 player_id TEXT,
                 birth_year INTEGER,
                 year INTEGER,
@@ -147,12 +113,12 @@ def temp_create_batting_forecast_table(batting_table):
     return query
 
 
-def create_player_career_stats_table_by_age(stat_categories):
+def create_standard_batting_career_by_age_table(stat_categories):
     min_age = 16
     max_age = 50
     query = """
-            CREATE TABLE IF NOT EXISTS x_career_batting_by_age(
-                player_id TEXT
+            CREATE TABLE IF NOT EXISTS standard_batting_career_by_age(
+                player_id TEXT, year INTEGER
             """
     for age in range(min_age, max_age + 1):
         for forecasted_stat in stat_categories:
@@ -162,15 +128,15 @@ def create_player_career_stats_table_by_age(stat_categories):
     return query
 
 
-def create_player_career_stats_table_by_experience(stat_categories):
+def create_standard_batting_career_by_experience_table(stat_categories):
     min_age = 16
     max_age = 50
 
     min_exp = 0
     max_exp = max_age - min_age + 1
     query = """
-            CREATE TABLE IF NOT EXISTS x_career_batting_by_experience(
-                player_id TEXT
+            CREATE TABLE IF NOT EXISTS standard_batting_career_by_experience(
+                player_id TEXT, year INTEGER
             """
     for exp in range(min_exp, max_exp):
         for forecasted_stat in stat_categories:
@@ -183,7 +149,7 @@ def create_player_career_stats_table_by_experience(stat_categories):
 def insert_forecasted_stats(forecasted_stats_list):
     query = """
             INSERT INTO
-                batting
+                forecasted_batting
             VALUES
                 (?, ?, ?
             """
@@ -193,24 +159,24 @@ def insert_forecasted_stats(forecasted_stats_list):
     return query
 
 
-def insert_train_data(batting_table):
+def insert_standard_batting_data():
     query = """
             INSERT INTO
-                """ + batting_table + """_batting
+                standard_batting
             VALUES
                 (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
     return query
 
 
-def insert_train_player_career_stats_by_age(stat_categories):
+def insert_standard_batting_career_stats_by_age(stat_categories):
     min_age = 16
     max_age = 50
     query = """
             INSERT INTO
-                x_career_batting_by_age
+                standard_batting_career_by_age
             VALUES
-                (?
+                (?, ?
             """
     for i in range(min_age, max_age + 1):
         for j in range(0, len(stat_categories)):
@@ -219,7 +185,7 @@ def insert_train_player_career_stats_by_age(stat_categories):
     return query
 
 
-def insert_train_player_career_stats_by_experience(stat_categories):
+def insert_standard_batting_career_stats_by_experience(stat_categories):
     min_age = 16
     max_age = 50
 
@@ -227,9 +193,9 @@ def insert_train_player_career_stats_by_experience(stat_categories):
     max_exp = max_age - min_age + 1
     query = """
             INSERT INTO
-                x_career_batting_by_experience
+                standard_batting_career_by_experience
             VALUES
-                (?
+                (?, ?
             """
     for i in range(min_exp, max_exp):
         for j in range(0, len(stat_categories)):
@@ -238,46 +204,87 @@ def insert_train_player_career_stats_by_experience(stat_categories):
     return query
 
 
-def clear_train_data(batting_table):
+def clear_standard_batting_data():
     query = """
             DELETE
             FROM
-                """ + batting_table + "_batting"
-    return query
-
-
-def clear_train_by_age_data():
-    query = """
-            DELETE
-            FROM
-                x_career_batting_by_age
+                standard_batting
             """
     return query
 
 
-def clear_train_by_experience_data():
+def clear_standard_batting_by_age_data():
     query = """
             DELETE
             FROM
-                x_career_batting_by_experience
+                standard_batting_career_by_age
+            """
+    return query
+
+
+def clear_standard_batting_by_experience_data():
+    query = """
+            DELETE
+            FROM
+                standard_batting_career_by_experience
             """
     return query
 
 
 def remove_forecast_table():
     query = """
-            DROP TABLE IF EXISTS batting
+            DROP TABLE IF EXISTS forecast_batting
             """
     return query
 
 
-def get_all_data_from_batting(batting_table):
+def get_all_standard_batting_data():
     query = """
             SELECT
                 *
             FROM
-            """ + batting_table + "_batting "
+                standard_batting
+            """
     return query
+
+
+def get_all_standard_batting_career_by_age_data():
+    query = """
+            SELECT
+                *
+            FROM
+                standard_batting_career_by_age
+            """
+    return query
+
+
+def get_all_standard_batting_career_by_age_experience():
+    query = """
+            SELECT
+                *
+            FROM
+                standard_batting_career_by_experience
+            """
+    return query
+
+
+def simple_table_query(table_name):
+    query = """
+            SELECT
+                *
+            FROM
+            """ + table_name + """
+            ASC LIMIT 1
+            """
+    return query
+
+
+def get_column_name_as_list_for_table(table_name, database_directory, database_name):
+    query = simple_table_query(table_name)
+    connection = sqlite3.connect(database_directory + database_name)
+    cursor = connection.execute(query)
+    column_names = [description[0] for description in cursor.description]
+    return column_names
 
 
 def get_sql_query_results_as_dataframe(query, database_directory, database_name):

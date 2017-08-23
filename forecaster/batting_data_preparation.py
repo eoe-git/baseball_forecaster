@@ -23,25 +23,23 @@ stat_categories_list = ['year', 'g', 'pa', 'ab', 'h', 'double', 'triple', 'hr', 
                         'ibb', 'hbp', 'sh', 'sf', 'g_idp']
 
 
-def get_plot_data():
+def prepare_batting_data():
     player_list = get_player_list().values.tolist()
     for player in player_list:
         player = player[0]
-        player_stats = get_player_season_stats_for_career(player)
-        player_stats = combine_player_stats_for_year(player_stats)
-        player_stats = remove_any_stats_that_dont_meet_min_pa(player_stats)
+        standard_batting_stats = get_player_season_stats_for_career(player)
+        standard_batting_stats = combine_player_stats_for_year(standard_batting_stats)
+        standard_batting_stats = remove_any_stats_that_dont_meet_min_pa(standard_batting_stats)
 
-        if len(player_stats) == 1 or len(player_stats) == 0:
+        if len(standard_batting_stats) == 0:
             continue  # cannot get predict data if sample is only 1 since current and future year are compared
         else:
-            X_train = player_stats[:-1].values
-            Y_train = player_stats[1:].values
-            X_train_career_by_age = train_data_for_career_by_age(player, player_stats, stat_categories_list)
-            X_train_career_by_exp = train_data_for_career_by_experience(player, player_stats, stat_categories_list)
-            bulk_insert_train_data(X_train, 'x_train')
-            bulk_insert_train_by_age_data(X_train_career_by_age)
-            bulk_insert_train_by_experience_data(X_train_career_by_exp)
-            bulk_insert_train_data(Y_train, 'y_train')
+            # standard_career_by_age = train_data_for_career_by_age(player, standard_batting_stats, stat_categories_list)
+            #standard_career_by_exp = train_data_for_career_by_experience(player,
+            #                                                             standard_batting_stats, stat_categories_list)
+            bulk_insert_standard_batting_data(standard_batting_stats.values)
+            #bulk_insert_standard_batting_by_age_data(standard_career_by_age)
+            #bulk_insert_standard_batting_by_experience_data(standard_career_by_exp)
 
 
 def get_test_data_by_age():
@@ -239,6 +237,32 @@ def test_data_for_career_by_experience(player, player_season_stats, stat_categor
     return player_stats
 
 
+def get_index_for_rows_needed_to_be_removed_for_train_data(batting_stats):
+    index = []
+    player_list = pd.Series(batting_stats.player_id.ravel()).unique().tolist()
+    for player in player_list:
+        player_stats = batting_stats[batting_stats.player_id.isin([player])]
+        if len(player_stats) == 1:
+            x_index = player_stats.iloc[0].name
+            y_index = player_stats.iloc[0].name
+        else:
+            x_index = player_stats.iloc[-1].name
+            y_index = player_stats.iloc[0].name
+        index.append((x_index, y_index))
+
+    return index
+
+
+def remove_rows_not_for_train_set(stats, x_or_y, index):
+    for i in index:
+        if x_or_y == 'x':
+            stats = stats.drop(i[0])
+        elif x_or_y == 'y':
+            stats = stats.drop(i[1])
+
+    return stats
+
+
 def combine_player_stats_for_year(season_stats):
     cols = ['player_id', 'birth_year', 'year', 'age']
     season_stats = season_stats.groupby(cols, as_index=False, sort=False).sum()
@@ -292,7 +316,7 @@ def add_id_year_and_age_for_test_data_to_results_df(temp, X_test):
 
 
 def get_player_list():
-    query = batting_queries.get_player_list(predict_year, furthest_back_year)
+    query = batting_queries.get_player_list(furthest_back_year)
     player_list = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_list
 
@@ -303,72 +327,102 @@ def get_test_player_list():
     return player_list
 
 
-def get_players_previous_season_stats():
+def get_players_previous_season_stats(predict_year, stats):
+    # get dataframe with values for predict year - 1
     query = batting_queries.get_players_previous_season_stats(predict_year)
     player_stats = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_stats
 
 
 def get_player_season_stats_for_career(player_id):
-    query = batting_queries.get_player_season_stats_for_career(player_id, predict_year, furthest_back_year)
+    # might remove query from this, and just directly get it from dataframe (could be faster)
+    query = batting_queries.get_player_season_stats_for_career(player_id, furthest_back_year)
     player_stats = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_stats
 
 
 def get_actual_forecast_year_values(player_id):
+    # get dataframe with values for predict year (when they exist)
     query = batting_queries.get_actual_forecast_year_values_for_player(player_id, predict_year)
     forecast_year_stats = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return forecast_year_stats
 
 
 def get_train_data(x_or_y):
-    query = batting_queries.get_all_data_from_batting(x_or_y)
+    train_stats = get_all_standard_batting_data()
+    train_data_index = get_index_for_rows_needed_to_be_removed_for_train_data(train_stats)
+    train_stats = remove_rows_not_for_train_set(train_stats, x_or_y, train_data_index)
+    return train_stats
+
+
+def get_all_standard_batting_data():
+    query = batting_queries.get_all_standard_batting_data()
     train_data = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
     return train_data
 
 
-def create_train_database_and_table(x_or_y):
-    query = batting_queries.temp_create_batting_forecast_table(x_or_y)
+def get_train_data_by_age():
+    # no longer getting from seperate table, have to get using single stats table (and modify dataframe)
+    query = batting_queries.get_all_data_from_batting_by_age()
+    train_data = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
+    return train_data
+
+
+def get_train_data_by_experience():
+    # no longer getting from seperate table, have to get using single stats table (and modify dataframe)
+    query = batting_queries.get_all_data_from_batting_by_experience()
+    train_data = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
+    return train_data
+
+
+def get_player_season_stats_for_test_set(table_name):
+    query = batting_queries.get_player_season_stats_for_test_set(table_name, predict_year)
+    results = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
+    return results
+
+
+def create_standard_batting_database_and_table():
+    query = batting_queries.create_standard_batting_table()
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
-def create_train_database_by_age_and_table():
-    query = batting_queries.create_player_career_stats_table_by_age(stat_categories_list)
+def create_standard_batting_career_by_age_table():
+    query = batting_queries.create_standard_batting_career_by_age_table(stat_categories_list)
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
-def create_train_database_by_experience_and_table():
-    query = batting_queries.create_player_career_stats_table_by_experience(stat_categories_list)
+def create_standard_batting_career_by_experience_table():
+    query = batting_queries.create_standard_batting_career_by_experience_table(stat_categories_list)
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
-def clear_train_data(x_or_y):
-    query = batting_queries.clear_train_data(x_or_y)
+def clear_standard_batting_data():
+    query = batting_queries.clear_standard_batting_data()
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
-def clear_train_by_age_data():
-    query = batting_queries.clear_train_by_age_data()
+def clear_standard_batting_by_age_data():
+    query = batting_queries.clear_standard_batting_by_age_data()
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
-def clear_train_by_experience_data():
-    query = batting_queries.clear_train_by_experience_data()
+def clear_standard_batting_by_experience_data():
+    query = batting_queries.clear_standard_batting_by_experience_data()
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
-def bulk_insert_train_data(stats, x_or_y):
-    query = batting_queries.insert_train_data(x_or_y)
+def bulk_insert_standard_batting_data(stats):
+    query = batting_queries.insert_standard_batting_data()
     batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
-def bulk_insert_train_by_age_data(stats):
-    query = batting_queries.insert_train_player_career_stats_by_age(stat_categories_list)
+def bulk_insert_standard_batting_by_age_data(stats):
+    query = batting_queries.insert_standard_batting_career_stats_by_age(stat_categories_list)
     batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
-def bulk_insert_train_by_experience_data(stats):
-    query = batting_queries.insert_train_player_career_stats_by_experience(stat_categories_list)
+def bulk_insert_standard_batting_by_experience_data(stats):
+    query = batting_queries.insert_standard_batting_career_stats_by_experience(stat_categories_list)
     batting_queries.execute_bulk_insert_sql_query(query, stats, results_directory, forecast_database_name)
 
 
@@ -378,21 +432,19 @@ def bulk_insert_forecasted_stats(stats):
 
 
 def create_train_tables():
-    create_train_database_and_table('x_train')
-    create_train_database_and_table('y_train')
-    create_train_database_by_age_and_table()
-    create_train_database_by_experience_and_table()
+    create_standard_batting_database_and_table()
+    create_standard_batting_career_by_age_table()
+    create_standard_batting_career_by_experience_table()
 
 
 def clear_all_train_data():
-    clear_train_data('x_train')
-    clear_train_data('y_train')
-    clear_train_by_age_data()
-    clear_train_by_experience_data()
+    clear_standard_batting_data()
+    clear_standard_batting_by_age_data()
+    clear_standard_batting_by_experience_data()
 
 
 def create_forecasted_tables():
-    query = batting_queries.create_batting_forecast_table(forecasted_batting_categories)
+    query = batting_queries.create_forecasted_batting_table(forecasted_batting_categories)
     batting_queries.execute_sql_query(query, results_directory, forecast_database_name)
 
 
