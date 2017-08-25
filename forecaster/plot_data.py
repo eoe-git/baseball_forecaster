@@ -3,8 +3,8 @@ import matplotlib.pyplot as plt
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
-predict_year = int(config['general']['forecast_year'])
-furthest_back_year = int(config['general']['furthest_back_year'])
+predict_year = int(config['model']['forecast_year'])
+furthest_back_year = int(config['model']['furthest_back_year'])
 
 
 def plot_data(Y_train_data, Y_test_data, category, results_folder):

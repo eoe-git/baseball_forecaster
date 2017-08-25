@@ -10,7 +10,7 @@ from sklearn.feature_selection import f_regression
 
 config = configparser.ConfigParser()
 config.read('settings.cfg')
-predict_year = int(config['general']['forecast_year'])
+predict_year = int(config['model']['forecast_year'])
 
 regression_config = configparser.ConfigParser()
 regression_config.read('forecaster/batting_model_settings.cfg')

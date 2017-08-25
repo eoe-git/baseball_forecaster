@@ -10,12 +10,13 @@ config.read('settings.cfg')
 database_directory = config['general']['database_directory']
 database_name = config['general']['database_name']
 forecast_database_name = config['general']['forecast_database_name']
-predict_year = int(config['general']['forecast_year'])
-furthest_back_year = int(config['general']['furthest_back_year'])
 minimum_plate_appearances = int(config['general']['minimum_plate_appearances'])
+predict_year = int(config['model']['forecast_year'])
+furthest_back_year = int(config['model']['furthest_back_year'])
 forecasted_batting_categories = config['model']['forecasted_batting_categories'].split(',')
 results_directory = 'results/'
 
+data_start_year = 1955
 non_stat_categories = ['player_id', 'birth_year']
 non_stat_categories_by_age = ['player_id', 'birth_year', 'age']
 id_year_and_age = ['player_id', 'year', 'age']
@@ -316,7 +317,7 @@ def add_id_year_and_age_for_test_data_to_results_df(temp, X_test):
 
 
 def get_player_list():
-    query = batting_queries.get_player_list(furthest_back_year)
+    query = batting_queries.get_player_list(data_start_year)
     player_list = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_list
 
@@ -336,7 +337,7 @@ def get_players_previous_season_stats(predict_year, stats):
 
 def get_player_season_stats_for_career(player_id):
     # might remove query from this, and just directly get it from dataframe (could be faster)
-    query = batting_queries.get_player_season_stats_for_career(player_id, furthest_back_year)
+    query = batting_queries.get_player_season_stats_for_career(player_id, data_start_year)
     player_stats = batting_queries.get_sql_query_results_as_dataframe(query, database_directory, database_name)
     return player_stats
 
@@ -349,14 +350,14 @@ def get_actual_forecast_year_values(player_id):
 
 
 def get_train_data(x_or_y):
-    train_stats = get_all_standard_batting_data()
+    train_stats = get_all_standard_batting_data_within_year_range()
     train_data_index = get_index_for_rows_needed_to_be_removed_for_train_data(train_stats)
     train_stats = remove_rows_not_for_train_set(train_stats, x_or_y, train_data_index)
     return train_stats
 
 
-def get_all_standard_batting_data():
-    query = batting_queries.get_all_standard_batting_data()
+def get_all_standard_batting_data_within_year_range():
+    query = batting_queries.get_all_standard_batting_data_within_year_range(predict_year, furthest_back_year)
     train_data = batting_queries.get_sql_query_results_as_dataframe(query, results_directory, forecast_database_name)
     return train_data
 

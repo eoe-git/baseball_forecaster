@@ -4,7 +4,7 @@ import pandas as pd
 
 # this will miss some players that have low AB and only play as DH
 # Example year (2014) player 'giambja01' will not show up for the predict year 2015
-def get_player_list(furthest_back):
+def get_player_list(data_start_year):
     query = """
             SELECT
                 DISTINCT batting.player_id
@@ -14,7 +14,7 @@ def get_player_list(furthest_back):
                 ON batting.player_id = fielding.player_id
                 AND batting.year=fielding.year
             WHERE
-                batting.year >= """ + str(furthest_back) + """
+                batting.year >= """ + str(data_start_year) + """
                 AND (batting.ab + batting.bb) >= 1
                 AND fielding.pos != 'P'
             """
@@ -38,7 +38,7 @@ def get_test_player_list(predict_year):
     return query
 
 
-def get_player_season_stats_for_career(player_id, furthest_back):
+def get_player_season_stats_for_career(player_id, data_start_year):
     query = """
             SELECT
                 batting.player_id, player.birth_year, batting.year,
@@ -53,7 +53,7 @@ def get_player_season_stats_for_career(player_id, furthest_back):
                 ON batting.player_id=player.player_id
             WHERE
                 player.player_id = '""" + str(player_id) + "'""""
-                AND batting.year >= """ + str(furthest_back) + """
+                AND batting.year >= """ + str(data_start_year) + """
                 AND (batting.ab + batting.bb) >  1
             """
     return query
@@ -238,13 +238,15 @@ def remove_forecast_table():
     return query
 
 
-def get_all_standard_batting_data():
+def get_all_standard_batting_data_within_year_range(predict_year, furthest_back_year):
     query = """
             SELECT
                 *
             FROM
                 standard_batting
-            """
+            WHERE
+                year >= """ + str(furthest_back_year) + """
+                and year < """ + str(predict_year - 1)
     return query
 
 
