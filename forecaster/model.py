@@ -11,6 +11,7 @@ from sklearn.feature_selection import f_regression
 config = configparser.ConfigParser()
 config.read('settings.cfg')
 predict_year = int(config['model']['forecast_year'])
+standard_batting = config['model']['standard_batting']
 
 regression_config = configparser.ConfigParser()
 regression_config.read('forecaster/batting_model_settings.cfg')
@@ -26,23 +27,30 @@ def get_forecasted_stats(X_train, Y_train, X_test, category, file):
     # Support Vector Regression
     forecaster_type = str(config['model']['forecaster'])
     if forecaster_type == 'standard':
-        k_selected = int(regression_config[category]['K_selected'])
-        c = int(regression_config[category]['C'])
-        epsilon = float(regression_config[category]['epsilon'])
-        gamma = float(regression_config[category]['gamma'])
+        if standard_batting == 'by_age' or standard_batting == 'by_age':
+            svr = SVR()
+            svr.fit(X_train_std, Y_train)
+            Y_test = svr.predict(X_test_std)
+            train_score = svr.score(X_train_std, Y_train)
+            model = svr
+        else:
+            k_selected = int(regression_config[category]['K_selected'])
+            c = int(regression_config[category]['C'])
+            epsilon = float(regression_config[category]['epsilon'])
+            gamma = float(regression_config[category]['gamma'])
 
-        k_best = SelectKBest(mutual_info_regression, k=k_selected)
-        k_best.fit_transform(X_train_std, Y_train)
-        selected_features = X_test.columns[k_best.transform(np.arange(len(X_test.columns)).reshape(1, -1))]
-        print(str(selected_features), file=file)
-        X_train_std = k_best.transform(X_train_std)
-        X_test_std = k_best.transform(X_test_std)
+            k_best = SelectKBest(mutual_info_regression, k=k_selected)
+            k_best.fit_transform(X_train_std, Y_train)
+            selected_features = X_test.columns[k_best.transform(np.arange(len(X_test.columns)).reshape(1, -1))]
+            print(str(selected_features), file=file)
+            X_train_std = k_best.transform(X_train_std)
+            X_test_std = k_best.transform(X_test_std)
 
-        svr = SVR(C=c, epsilon=epsilon, gamma=gamma)
-        svr.fit(X_train_std, Y_train)
-        Y_test = svr.predict(X_test_std)
-        train_score = svr.score(X_train_std, Y_train)
-        model = svr
+            svr = SVR(C=c, epsilon=epsilon, gamma=gamma)
+            svr.fit(X_train_std, Y_train)
+            Y_test = svr.predict(X_test_std)
+            train_score = svr.score(X_train_std, Y_train)
+            model = svr
     else:
         parameters = {'C': [1, 10, 100], 'gamma': [0.001, 0.01, 0.1], 'epsilon': [0.1, 1, 10]}
         k_selected = int(regression_config[category]['K_selected'])

@@ -118,7 +118,7 @@ def create_standard_batting_career_by_age_table(stat_categories):
     max_age = 50
     query = """
             CREATE TABLE IF NOT EXISTS standard_batting_career_by_age(
-                player_id TEXT, year INTEGER
+                player_id TEXT, year INTEGER, age INTEGER
             """
     for age in range(min_age, max_age + 1):
         for forecasted_stat in stat_categories:
@@ -136,7 +136,7 @@ def create_standard_batting_career_by_experience_table(stat_categories):
     max_exp = max_age - min_age + 1
     query = """
             CREATE TABLE IF NOT EXISTS standard_batting_career_by_experience(
-                player_id TEXT, year INTEGER
+                player_id TEXT, year INTEGER, age INTEGER
             """
     for exp in range(min_exp, max_exp):
         for forecasted_stat in stat_categories:
@@ -176,7 +176,7 @@ def insert_standard_batting_career_stats_by_age(stat_categories):
             INSERT INTO
                 standard_batting_career_by_age
             VALUES
-                (?, ?
+                (?, ?, ?
             """
     for i in range(min_age, max_age + 1):
         for j in range(0, len(stat_categories)):
@@ -195,7 +195,7 @@ def insert_standard_batting_career_stats_by_experience(stat_categories):
             INSERT INTO
                 standard_batting_career_by_experience
             VALUES
-                (?, ?
+                (?, ?, ?
             """
     for i in range(min_exp, max_exp):
         for j in range(0, len(stat_categories)):
@@ -250,23 +250,27 @@ def get_all_standard_batting_data_within_year_range(predict_year, furthest_back_
     return query
 
 
-def get_all_standard_batting_career_by_age_data():
+def get_all_standard_batting_career_by_age_data_within_year_range(predict_year, furthest_back_year):
     query = """
             SELECT
                 *
             FROM
                 standard_batting_career_by_age
-            """
+            WHERE
+                year >= """ + str(furthest_back_year) + """
+                and year < """ + str(predict_year - 1)
     return query
 
 
-def get_all_standard_batting_career_by_age_experience():
+def get_all_standard_batting_career_by_experience_data_within_year_range(predict_year, furthest_back_year):
     query = """
             SELECT
                 *
             FROM
                 standard_batting_career_by_experience
-            """
+            WHERE
+                year >= """ + str(furthest_back_year) + """
+                and year < """ + str(predict_year - 1)
     return query
 
 

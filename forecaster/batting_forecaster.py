@@ -11,6 +11,7 @@ config = configparser.ConfigParser()
 config.read('settings.cfg')
 
 forecasted_batting_categories = config['model']['forecasted_batting_categories'].split(',')
+standard_batting = config['model']['standard_batting']
 
 results_directory = 'results/' #remove later
 forecast_database_name = config['general']['forecast_database_name'] #remove later
@@ -29,27 +30,23 @@ def forecast_batter_stats():
     results_folder = utils.get_results_folder_path()
     results_file = results_folder + 'Results.txt'
 
-    X_test = batting_data.get_player_season_stats_for_test_set('standard_batting')
-    # X_test = batting_data.get_test_data_by_age()
-    # X_test = batting_data.get_test_data_by_experience()
-    X_train = batting_data.get_train_data('x')
-    # X_train = batting_data.get_train_data_by_age()
-    # X_train = batting_data.get_train_data_by_experience()
+    if standard_batting == 'by_age':
+        X_test = batting_data.get_player_season_stats_for_test_set('standard_batting_career_by_age')
+        X_train = batting_data.get_train_data_by_age()
+    elif standard_batting == 'by_exp':
+        X_test = batting_data.get_player_season_stats_for_test_set('standard_batting_career_by_experience')
+        X_train = batting_data.get_train_data_by_experience()
+    else:
+        X_test = batting_data.get_player_season_stats_for_test_set('standard_batting')
+        X_train = batting_data.get_train_data('x')
+
     Y_train_stats = batting_data.get_train_data('y')
 
     results = pd.DataFrame()
     # results columns need to be added before the columns are removed for forecasting the data
     results = batting_data.add_id_year_and_age_for_test_data_to_results_df(results, X_test)
 
-    # columns = batting_queries.get_column_name_as_list_for_table('x_career_batting_by_age',
-    #                                                             results_directory, forecast_database_name)
-    # columns = batting_queries.get_column_name_as_list_for_table('x_career_batting_by_experience',
-    #                                                            results_directory, forecast_database_name)
-    # X_test = pd.DataFrame(X_test, columns=list(columns))
-    # del columns[0]
     X_test = batting_data.drop_unused_columns_for_forecasting(X_test)
-    columns = X_test.columns
-    # X_test = pd.DataFrame(X_test, columns=list(columns), dtype=float)
     X_train = batting_data.drop_unused_columns_for_forecasting(X_train)
     Y_train_stats = batting_data.drop_unused_columns_for_forecasting(Y_train_stats)
 
