@@ -17,7 +17,7 @@ regression_config = configparser.ConfigParser()
 regression_config.read('forecaster/batting_model_settings.cfg')
 
 
-def get_forecasted_stats(X_train, Y_train, X_test, category, file):
+def get_forecasted_stats(X_train, Y_train, X_test, category):
     scaler = StandardScaler()
 
     Y_train = Y_train.values.ravel().astype(float)  # necessary to avoid warning
@@ -42,7 +42,8 @@ def get_forecasted_stats(X_train, Y_train, X_test, category, file):
             k_best = SelectKBest(mutual_info_regression, k=k_selected)
             k_best.fit_transform(X_train_std, Y_train)
             selected_features = X_test.columns[k_best.transform(np.arange(len(X_test.columns)).reshape(1, -1))]
-            print(str(selected_features), file=file)
+            print(str(selected_features))
+            # Need to write the selected features somewhere (besides console)
             X_train_std = k_best.transform(X_train_std)
             X_test_std = k_best.transform(X_test_std)
 
@@ -58,23 +59,26 @@ def get_forecasted_stats(X_train, Y_train, X_test, category, file):
         k_best = SelectKBest(mutual_info_regression, k=k_selected)
         k_best.fit_transform(X_train_std, Y_train)
         selected_features = X_test.columns[k_best.transform(np.arange(len(X_test.columns)).reshape(1, -1))]
-        print(str(selected_features), file=file)
+        print(str(selected_features))
+        # Need to write the selected features somewhere (besides console)
         X_train_std = k_best.transform(X_train_std)
         X_test_std = k_best.transform(X_test_std)
 
         svr = SVR()
         clf = GridSearchCV(svr, parameters, cv=5)
         clf.fit(X_train_std, Y_train)
-        print(str(clf.best_estimator_), file=file)
+        print(str(clf.best_estimator_))
+        # Need to write the best estimator somewhere (besides console)
         Y_test = clf.predict(X_test_std)
         train_score = clf.score(X_train_std, Y_train)
         model = clf
 
     Y_test = np.rint(Y_test)
-    results_compare.min_max_mean_median_compare(Y_test, Y_train, file)
-    print('Train Data Score: ' + str(train_score), file=file)
+    print('Train Data Score: ' + str(train_score))
+    # Need to write the train data score somewhere (besides console)
 
     if predict_year < 2016:
         test_score = results_compare.get_results_score_with_actuals(model, X_test_std, Y_test, category)
-        print('Test Data Score: ' + str(test_score), file=file)
+        print('Test Data Score: ' + str(test_score))
+        # Need to write the test data score somewhere (besides console)
     return Y_test

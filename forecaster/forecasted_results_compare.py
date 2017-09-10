@@ -3,24 +3,6 @@ import numpy as np
 import pandas as pd
 
 
-def min_max_mean_median_compare(Y_test, Y_train, file):
-    Y_test_max = np.amax(Y_test)
-    Y_train_max = np.amax(Y_train)
-    Y_test_min = np.amin(Y_test)
-    Y_train_min = np.amin(Y_train)
-    Y_test_mean = np.average(Y_test)
-    Y_train_mean = np.average(Y_train)
-    Y_test_median = np.median(Y_test)
-    Y_train_median = np.median(Y_train)
-
-    Y_test_results = 'Min: ' + str(Y_test_min) + ' Max: ' + str(Y_test_max) + ' Mean: ' + str(Y_test_mean) + \
-                     ' Median: ' + str(Y_test_median)
-    print(Y_test_results, file=file)
-    Y_compare_results = 'Min: ' + str(Y_test_min - Y_train_min) + ' Max: ' + str(Y_test_max - Y_train_max) + \
-                        ' Mean: ' + str(Y_test_mean - Y_train_mean) + ' Median: ' + str(Y_test_median - Y_train_median)
-    print(Y_compare_results, file=file)
-
-
 def get_results_score_with_actuals(model, X_test_std, Y_test, category):
     X_test = batting_data.combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(
         batting_data.get_players_previous_season_stats())

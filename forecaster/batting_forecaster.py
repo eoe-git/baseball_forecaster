@@ -2,7 +2,6 @@ import forecaster.batting_data_preparation as batting_data
 import forecaster.batting_queries as batting_queries # remove later
 import forecaster.data_config as data_config
 import forecaster.model as model
-import forecaster.plot_data as plot_data
 import forecaster.utils as utils
 import configparser
 import pandas as pd
@@ -27,9 +26,6 @@ def forecast_batter_stats():
         batting_data.clear_forecasted_stats()
         batting_data.create_forecasted_tables()
 
-    results_folder = utils.get_results_folder_path()
-    results_file = results_folder + 'Results.txt'
-
     if standard_batting == 'by_age':
         X_test = batting_data.get_player_season_stats_for_test_set('standard_batting_career_by_age')
         X_train = batting_data.get_train_data_by_age()
@@ -50,21 +46,15 @@ def forecast_batter_stats():
     X_train = batting_data.drop_unused_columns_for_forecasting(X_train)
     Y_train_stats = batting_data.drop_unused_columns_for_forecasting(Y_train_stats)
 
-    with open(results_file, mode='wt') as myfile:
-        utils.add_basic_settings_to_files(myfile)
+    for category in forecasted_batting_categories:
+        print('Starting: ' + category)
+        Y_train = Y_train_stats.copy()
+        Y_train = batting_data.get_train_data_for_category(Y_train, category)
+        Y_train_array = Y_train.values.ravel()
 
-        for category in forecasted_batting_categories:
-            print('Starting: ' + category)
-            print('Forecasting: ' + category, file=myfile)
-            Y_train = Y_train_stats.copy()
-            Y_train = batting_data.get_train_data_for_category(Y_train, category)
-            Y_train_array = Y_train.values.ravel()
-
-            Y_test = model.get_forecasted_stats(X_train, Y_train, X_test, category, myfile)
-            results[category] = pd.Series(Y_test)
-            Y_test_array = results[category].values.ravel()
-            plot_data.plot_data(Y_train_array, Y_test_array, category, results_folder)
-            print('___________________________________________', file=myfile)
+        Y_test = model.get_forecasted_stats(X_train, Y_train, X_test, category)
+        results[category] = pd.Series(Y_test)
+        Y_test_array = results[category].values.ravel()
 
     batting_data.bulk_insert_forecasted_stats(results.values)
     utils.write_results_into_csv(results)

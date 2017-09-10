@@ -22,6 +22,8 @@ id_year_and_age = ['player_id', 'year', 'age']
 stat_categories_list = ['year', 'g', 'pa', 'ab', 'h', 'double', 'triple', 'hr', 'r', 'rbi', 'sb', 'cs', 'bb', 'so',
                         'ibb', 'hbp', 'sh', 'sf', 'g_idp']
 
+non_stat_categories_by_age = ['player_id', 'birth_year', 'age']
+
 if standard_batting == 'by_age' or standard_batting == 'by_age':
     non_stat_categories = ['player_id', 'birth_year', 'year', 'age']
 else:
@@ -307,7 +309,7 @@ def drop_unused_columns_for_forecasting(data):
 def drop_unused_columns_for_forecasting_by_age(data):
     categories = list(data.keys())
     for i in categories:
-        if i in non_stat_categories:
+        if i in non_stat_categories_by_age:
             data = data.drop(i, 1)
     return data
 
