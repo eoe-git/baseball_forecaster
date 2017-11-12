@@ -6,7 +6,7 @@ import pandas as pd
 def get_results_score_with_actuals(model, X_test_std, Y_test, category):
     X_test = batting_data.combine_yearly_stats_and_remove_years_that_dont_meet_min_pa(
         batting_data.get_players_previous_season_stats())
-    player_list = X_test['player_id']
+    player_list = X_test['playerId']
     Y_test_actual_values = np.empty(len(player_list), dtype=int)
     Y_test_temp = Y_test.copy()
     i = 0

@@ -18,16 +18,16 @@ standard_batting = config['model']['standard_batting']
 
 results_directory = 'results/'
 data_start_year = 1955
-id_year_and_age = ['player_id', 'year', 'age']
-stat_categories_list = ['year', 'g', 'pa', 'ab', 'h', 'double', 'triple', 'hr', 'r', 'rbi', 'sb', 'cs', 'bb', 'so',
-                        'ibb', 'hbp', 'sh', 'sf', 'g_idp']
+id_year_and_age = ['playerID', 'yearID', 'age']
+stat_categories_list = ['yearID', 'G', 'PA', 'AB', 'H', 'DOUBLE', 'TRIPLE', 'HR', 'R', 'RBI', 'SB', 'CS', 'BB', 'SO',
+                        'IBB', 'HBP', 'SH', 'SF', 'GIDP']
 
-non_stat_categories_by_age = ['player_id', 'birth_year', 'age']
+non_stat_categories_by_age = ['playerID', 'birthYear', 'age']
 
 if standard_batting == 'by_age' or standard_batting == 'by_age':
-    non_stat_categories = ['player_id', 'birth_year', 'year', 'age']
+    non_stat_categories = ['playerID', 'birthYear', 'yearID', 'age']
 else:
-    non_stat_categories = ['player_id', 'birth_year']
+    non_stat_categories = ['playerID', 'birthYear']
 
 
 def prepare_batting_data():
@@ -94,14 +94,14 @@ def train_data_for_career_by_age(player, player_season_stats, stat_categories):
     max_age = 50
 
     player_ages = player_season_stats.age
-    player_years = player_season_stats.year.astype('float')
+    player_years = player_season_stats.yearID.astype('float')
     player_season_stats = drop_unused_columns_for_forecasting_by_age(player_season_stats)
 
     player_min_age = player_ages[0]
-    pad_start = np.zeros(((player_min_age - min_age) * len(stat_categories)))
+    pad_start = np.zeros((int(player_min_age - min_age) * len(stat_categories)))
 
     previous_age = player_min_age
-    player_stats = np.array(np.empty(((max_age - min_age + 1) * len(stat_categories)) + 3), dtype=object)
+    player_stats = np.array(np.empty((int(max_age - min_age + 1) * len(stat_categories)) + 3), dtype=object)
     player_stats_base = np.array([player, 1955, 18], dtype=object)
     player_stats_base = np.concatenate((player_stats_base, pad_start))
     for age, year, season_stat in zip(player_ages, player_years, player_season_stats.itertuples()):
@@ -115,7 +115,7 @@ def train_data_for_career_by_age(player, player_season_stats, stat_categories):
         elif (age - previous_age) == 1:
             player_season_stats = np.concatenate((player_season_stats, season_stat_array))
         elif (age - previous_age) > 1:
-            age_diff = age - previous_age
+            age_diff = int(age - previous_age)
             player_season_stats = np.concatenate((player_season_stats, np.zeros(len(stat_categories) * (age_diff - 1))))
             player_season_stats = np.concatenate((player_season_stats, season_stat_array))
         elif (age - previous_age) <= 0:
@@ -123,7 +123,7 @@ def train_data_for_career_by_age(player, player_season_stats, stat_categories):
 
         previous_age = age
         player_stats_base = player_season_stats
-        pad_end = np.zeros((max_age - age) * len(stat_categories))
+        pad_end = np.zeros(int(max_age - age) * len(stat_categories))
         player_season_stats = np.concatenate((player_season_stats, pad_end))
         player_stats = np.vstack((player_stats, player_season_stats))
 
@@ -137,7 +137,7 @@ def train_data_for_career_by_experience(player, player_season_stats, stat_catego
     max_age = 50
 
     player_ages = player_season_stats.age
-    player_years = player_season_stats.year.astype('float')
+    player_years = player_season_stats.yearID.astype('float')
     player_season_stats = drop_unused_columns_for_forecasting_by_age(player_season_stats)
 
     player_min_age = player_ages[0]
@@ -145,7 +145,7 @@ def train_data_for_career_by_experience(player, player_season_stats, stat_catego
 
     previous_exp = 0
     max_exp = max_age - min_age + 1
-    player_stats = np.array(np.empty(((max_age - min_age + 1) * len(stat_categories)) + 3), dtype=object)
+    player_stats = np.array(np.empty(int((max_age - min_age + 1) * len(stat_categories)) + 3), dtype=object)
     player_stats_base = np.array([player, 1955, 18], dtype=object)
     for exp, age, year, season_stat in zip(player_exp, player_ages, player_years, player_season_stats.itertuples()):
         player_season_stats = player_stats_base
@@ -158,7 +158,7 @@ def train_data_for_career_by_experience(player, player_season_stats, stat_catego
         elif (exp - previous_exp) == 1:
             player_season_stats = np.concatenate((player_season_stats, season_stat_array))
         elif (exp - previous_exp) > 1:
-            exp_diff = exp - previous_exp
+            exp_diff = int(exp - previous_exp)
             player_season_stats = np.concatenate((player_season_stats, np.zeros(len(stat_categories) * (exp_diff - 1))))
             player_season_stats = np.concatenate((player_season_stats, season_stat_array))
         elif (exp - previous_exp) <= 0:
@@ -166,7 +166,7 @@ def train_data_for_career_by_experience(player, player_season_stats, stat_catego
 
         previous_exp = exp
         player_stats_base = player_season_stats
-        pad_end = np.zeros((max_exp - exp - 1) * len(stat_categories))
+        pad_end = np.zeros(int(max_exp - exp - 1) * len(stat_categories))
         player_season_stats = np.concatenate((player_season_stats, pad_end))
         player_stats = np.vstack((player_stats, player_season_stats))
 
@@ -248,9 +248,9 @@ def test_data_for_career_by_experience(player, player_season_stats, stat_categor
 
 def get_index_for_rows_needed_to_be_removed_for_train_data(batting_stats):
     index = []
-    player_list = pd.Series(batting_stats.player_id.ravel()).unique().tolist()
+    player_list = pd.Series(batting_stats.playerID.ravel()).unique().tolist()
     for player in player_list:
-        player_stats = batting_stats[batting_stats.player_id.isin([player])]
+        player_stats = batting_stats[batting_stats.playerID.isin([player])]
         if len(player_stats) == 1:
             x_index = player_stats.iloc[0].name
             y_index = player_stats.iloc[0].name
@@ -273,7 +273,7 @@ def remove_rows_not_for_train_set(stats, x_or_y, index):
 
 
 def combine_player_stats_for_year(season_stats):
-    cols = ['player_id', 'birth_year', 'year', 'age']
+    cols = ['playerID', 'birthYear', 'yearID', 'age']
     season_stats = season_stats.groupby(cols, as_index=False, sort=False).sum()
     return season_stats
 
@@ -281,7 +281,7 @@ def combine_player_stats_for_year(season_stats):
 def remove_any_stats_that_dont_meet_min_pa(season_stats):
     temp = season_stats
     for i, season in season_stats.iterrows():
-        plate_appearances = season['ab'] + season['bb'] + season['hbp'] + season['sh'] + season['sf']
+        plate_appearances = season['AB'] + season['BB'] + season['HBP'] + season['SH'] + season['SF']
         if plate_appearances < minimum_plate_appearances:
             temp.drop(i, inplace=True)
     temp = temp.reset_index(drop=True)
@@ -317,7 +317,7 @@ def drop_unused_columns_for_forecasting_by_age(data):
 def add_id_year_and_age_for_test_data_to_results_df(temp, X_test):
     for i in id_year_and_age:
         # The year cannot be the first column added
-        if i == 'year':
+        if i == 'yearID':
             temp[i] = predict_year
         else:
             temp[i] = pd.Series(X_test[i])

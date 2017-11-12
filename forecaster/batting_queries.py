@@ -7,15 +7,15 @@ import pandas as pd
 def get_player_list(data_start_year):
     query = """
             SELECT
-                DISTINCT batting.player_id
+                DISTINCT batting.playerID
             FROM
                 batting
             INNER JOIN fielding
-                ON batting.player_id = fielding.player_id
-                AND batting.year=fielding.year
+                ON batting.playerID = fielding.playerID
+                AND batting.yearID=fielding.yearID
             WHERE
-                batting.year >= """ + str(data_start_year) + """
-                AND (batting.ab + batting.bb) >= 1
+                batting.yearID >= """ + str(data_start_year) + """
+                AND (batting.AB + batting.BB) >= 1
                 AND fielding.pos != 'P'
             """
     return query
@@ -24,15 +24,15 @@ def get_player_list(data_start_year):
 def get_test_player_list(predict_year):
     query = """
             SELECT
-                DISTINCT batting.player_id
+                DISTINCT batting.playerID
             FROM
                 batting
             INNER JOIN fielding
-                ON batting.player_id = fielding.player_id
-                AND batting.year=fielding.year
+                ON batting.playerID = fielding.playerID
+                AND batting.yearID=fielding.yearID
             WHERE
-                batting.year == """ + str(predict_year - 1) + """
-                AND (batting.ab + batting.bb) >= 1
+                batting.yearID == """ + str(predict_year - 1) + """
+                AND (batting.AB + batting.BB) >= 1
                 AND fielding.pos != 'P'
             """
     return query
@@ -41,20 +41,20 @@ def get_test_player_list(predict_year):
 def get_player_season_stats_for_career(player_id, data_start_year):
     query = """
             SELECT
-                batting.player_id, player.birth_year, batting.year,
-                batting.year - player.birth_year    AS age, batting.g,
-                batting.ab + batting.bb + batting.hbp + batting.sh + batting.sf    AS pa,
-                batting.ab, batting.h, batting.double, batting.triple,
-                batting.hr, batting.r, batting.rbi, batting.sb, batting.cs, batting.bb,
-                batting.so, batting.ibb, batting.hbp, batting.sh, batting.sf, batting.g_idp
+                batting.playerID, master.birthYear, batting.yearID,
+                batting.yearID - master.birthYear    AS age, batting.G,
+                batting.AB + batting.BB + batting.HBP + batting.SH + batting.SF    AS PA,
+                batting.AB, batting.H, batting.DOUBLE, batting.TRIPLE,
+                batting.HR, batting.R, batting.RBI, batting.SB, batting.CS, batting.BB,
+                batting.SO, batting.IBB, batting.HBP, batting.SH, batting.SF, batting.GIDP
             FROM
                 batting
-            INNER JOIN player
-                ON batting.player_id=player.player_id
+            INNER JOIN master
+                ON batting.playerID=master.playerID
             WHERE
-                player.player_id = '""" + str(player_id) + "'""""
-                AND batting.year >= """ + str(data_start_year) + """
-                AND (batting.ab + batting.bb) >  1
+                master.playerID = '""" + str(player_id) + "'""""
+                AND batting.yearID >= """ + str(data_start_year) + """
+                AND (batting.AB + batting.BB) >  1
             """
     return query
 
@@ -66,9 +66,9 @@ def get_player_season_stats_for_test_set(table_name, predict_year):
             FROM
                 """ + table_name + """
             WHERE
-                year = """ + str(predict_year - 1) + """
+                yearID = """ + str(predict_year - 1) + """
             ORDER BY
-                player_id
+                playerID
             """
     return query
 
@@ -76,7 +76,7 @@ def get_player_season_stats_for_test_set(table_name, predict_year):
 def create_forecasted_batting_table(forecasted_stats_list):
     query = """
             CREATE TABLE IF NOT EXISTS forecasted_batting(
-                player_id TEXT, year INTEGER, age INTEGER
+                playerID TEXT, yearID INTEGER, age INTEGER
             """
     for forecasted_stat in forecasted_stats_list:
         query_line = ', ' + forecasted_stat + ' NUMERIC'
@@ -87,28 +87,28 @@ def create_forecasted_batting_table(forecasted_stats_list):
 
 def create_standard_batting_table():
     query = """CREATE TABLE IF NOT EXISTS standard_batting(
-                player_id TEXT,
-                birth_year INTEGER,
-                year INTEGER,
+                playerID TEXT,
+                birthYear INTEGER,
+                yearID INTEGER,
                 age INTEGER,
-                g NUMERIC,
-                pa NUMERIC,
-                ab NUMERIC,
-                h NUMERIC,
-                double NUMERIC,
-                triple NUMERIC,
-                hr NUMERIC,
-                r NUMERIC,
-                rbi NUMERIC,
-                sb NUMERIC,
-                cs NUMERIC,
-                bb NUMERIC,
-                so NUMERIC,
-                ibb NUMERIC,
-                hbp NUMERIC,
-                sh NUMERIC,
-                sf NUMERIC,
-                g_idp NUMERIC)
+                G NUMERIC,
+                PA NUMERIC,
+                AB NUMERIC,
+                H NUMERIC,
+                DOUBLE NUMERIC,
+                TRIPLE NUMERIC,
+                HR NUMERIC,
+                R NUMERIC,
+                RBI NUMERIC,
+                SB NUMERIC,
+                CS NUMERIC,
+                BB NUMERIC,
+                SO NUMERIC,
+                IBB NUMERIC,
+                HBP NUMERIC,
+                SH NUMERIC,
+                SF NUMERIC,
+                GIDP NUMERIC)
                 """
     return query
 
@@ -118,7 +118,7 @@ def create_standard_batting_career_by_age_table(stat_categories):
     max_age = 50
     query = """
             CREATE TABLE IF NOT EXISTS standard_batting_career_by_age(
-                player_id TEXT, year INTEGER, age INTEGER
+                playerID TEXT, yearID INTEGER, age INTEGER
             """
     for age in range(min_age, max_age + 1):
         for forecasted_stat in stat_categories:
@@ -136,7 +136,7 @@ def create_standard_batting_career_by_experience_table(stat_categories):
     max_exp = max_age - min_age + 1
     query = """
             CREATE TABLE IF NOT EXISTS standard_batting_career_by_experience(
-                player_id TEXT, year INTEGER, age INTEGER
+                playerID TEXT, yearID INTEGER, age INTEGER
             """
     for exp in range(min_exp, max_exp):
         for forecasted_stat in stat_categories:
@@ -245,8 +245,8 @@ def get_all_standard_batting_data_within_year_range(predict_year, furthest_back_
             FROM
                 standard_batting
             WHERE
-                year >= """ + str(furthest_back_year) + """
-                and year < """ + str(predict_year - 1)
+                yearID >= """ + str(furthest_back_year) + """
+                and yearID < """ + str(predict_year - 1)
     return query
 
 
@@ -257,8 +257,8 @@ def get_all_standard_batting_career_by_age_data_within_year_range(predict_year, 
             FROM
                 standard_batting_career_by_age
             WHERE
-                year >= """ + str(furthest_back_year) + """
-                and year < """ + str(predict_year - 1)
+                yearID >= """ + str(furthest_back_year) + """
+                and yearID < """ + str(predict_year - 1)
     return query
 
 
@@ -269,8 +269,8 @@ def get_all_standard_batting_career_by_experience_data_within_year_range(predict
             FROM
                 standard_batting_career_by_experience
             WHERE
-                year >= """ + str(furthest_back_year) + """
-                and year < """ + str(predict_year - 1)
+                yearID >= """ + str(furthest_back_year) + """
+                and yearID < """ + str(predict_year - 1)
     return query
 
 
