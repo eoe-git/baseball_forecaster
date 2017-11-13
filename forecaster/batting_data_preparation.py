@@ -1,5 +1,6 @@
 import forecaster.batting_queries as batting_queries
 import forecaster.data_config as data_config
+import forecaster.database_setup as database_setup
 import configparser
 import pandas as pd
 import numpy as np
@@ -484,3 +485,4 @@ def database_preparation():
     data_config.create_config_table()
     clear_all_train_data()
     data_config.clear_config_table()
+    database_setup.clear_database()

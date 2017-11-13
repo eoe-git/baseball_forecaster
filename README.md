@@ -14,7 +14,7 @@ Category(test score, train score): h(0.33, 0.44), hr(0.43, 0.51), r(0.33, 0.47),
 The standard run takes about an hour to complete
 
 ## Limitations
-Currently it only forecasts counting stats for batting (g, pa, ab, h, double, triple, hr, r, rbi sb, cs, bb, so, ibb, hbp, sh, sf, g_idp)
+Currently it only forecasts counting stats for batting (g, pa, ab, h, double, triple, hr, r, rbi sb, cs, bb, so, ibb, hbp, sh, sf, gidp)
 
 There are difficulties predicting outliers, since the model does not want to overfit to incorporate them
 
@@ -24,12 +24,10 @@ Does not account for players career stats, only accounts for their previous seas
 ## Requirements
 ### Data
 
-The data can be obtained at https://www.kaggle.com/seanlahman/the-history-of-baseball
-
 The data is from [Sean Lahman's Baseball Database](http://www.seanlahman.com/baseball-archive/statistics/) and is licensed under
 [CC BY-SA 3.0 License](http://creativecommons.org/licenses/by-sa/3.0/)
 
-Only the database.sqlite is necessary
+The comma-delimited verison for 2016 is necessary
 
 ### Python
 Python 3.4+, sklearn 0.18+, numpy, pandas, matplotlib
@@ -40,9 +38,8 @@ Configuration is in the settings.cfg
 The SVR parameters can be modified in forecaster/batting_model_setting.cfg (there are existing default values)
 
 ### Required
-database_directory: (Enter the path to where the database is located)
+database_directory: (Enter the path to where the comma-delimited files are located, this is also where the database.sqlite will be created)
 
-database_name: (Enter the database name including .sqlite, only necessary if it was changed from database.sqlite)
 
 ### Other Settings
 forecasted_batting_categories: (Stats to be predicted, the full list of catagories can be seen in the settings file)

@@ -1,6 +1,7 @@
 import forecaster.batting_data_preparation as batting_data
 import forecaster.batting_queries as batting_queries # remove later
 import forecaster.data_config as data_config
+import forecaster.database_setup as database_setup
 import forecaster.model as model
 import forecaster.utils as utils
 import configparser
@@ -20,6 +21,7 @@ def forecast_batter_stats():
     data_config.create_config_table()
     if data_config.config_values_have_changed():
         batting_data.database_preparation()
+        database_setup.create_database()
         batting_data.prepare_batting_data()
         data_config.insert_values_into_config_table()
     else:
